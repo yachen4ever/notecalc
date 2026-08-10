@@ -77,19 +77,13 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Build Tauri (tar.gz for Linux/macOS)
-        if: runner.os != 'Windows'
-        run: npm run tauri -- build --target ${{ matrix.target }}
-
-      - name: Build Tauri (zip for Windows)
-        if: runner.os == 'Windows'
+      - name: Build Tauri
         run: npm run tauri -- build --target ${{ matrix.target }}
 
       - name: Package binary (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
-          cd src-tauri/target/${{ matrix.target }}/release
-          tar czf ../../../notecalc-${{ matrix.label }}.tar.gz notecalc
+          tar czf notecalc-${{ matrix.label }}.tar.gz -C src-tauri/target/${{ matrix.target }}/release notecalc
 
       - name: Package binary (Windows)
         if: runner.os == 'Windows'
@@ -100,9 +94,7 @@ jobs:
       - name: Upload to release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            notecalc-${{ matrix.label }}.tar.gz
-            notecalc-${{ matrix.label }}.zip
+          files: notecalc-${{ matrix.label }}.*
 
   # 第三步：构建 Linux deb 包
   build-deb:
