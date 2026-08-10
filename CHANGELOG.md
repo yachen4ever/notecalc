@@ -3,13 +3,39 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'fbeca331-43b3-4050-82f7-615bb96c35bb'
-  PropagateID: 'fbeca331-43b3-4050-82f7-615bb96c35bb'
-  ReservedCode1: '0f911130-2069-4876-b6fe-860ab54aa286'
-  ReservedCode2: '0f911130-2069-4876-b6fe-860ab54aa286'
+  ProduceID: 'ed174698-f31f-40fb-bad9-042ac7729941'
+  PropagateID: 'ed174698-f31f-40fb-bad9-042ac7729941'
+  ReservedCode1: 'f8182faa-bb29-4b1d-925a-b4467fc8ff64'
+  ReservedCode2: 'f8182faa-bb29-4b1d-925a-b4467fc8ff64'
 ---
 
 # 更新日志
+
+## v0.2-alpha.1 (2026-08-11)
+
+### 新增
+
+- 语义分析规则引擎（中英双语），多级计算管线
+- 中文折扣：打8折 / 半价 / 满200减50 / 涨10% / 降10%
+- 英文百分比：10% off 200 / 10% of 200 / 200 + 10% / 200 - 10%
+- 数字提取求和：餐饮340 打车86 → 426
+- 规则引擎架构（composables/rules/），可扩展新增规则
+
+### 规则引擎架构
+
+```
+输入文本 → mathjs 表达式（四则运算+括号）
+                ↓ 失败
+           中文折扣规则（打折/半价/满减/涨降）
+                ↓ 不匹配
+           英文百分比规则（off/of/+/-）
+                ↓ 不匹配
+           数字提取求和（兜底）
+                ↓ 无数字
+           null（纯文字行）
+```
+
+---
 
 ## v0.1-alpha.2 (2026-08-10)
 
