@@ -64,7 +64,12 @@ jobs:
           RAW="${GITHUB_REF_NAME#v}"
           # Normalize to semver: 0.2-alpha.2 → 0.2.0-alpha.2, 0.2 → 0.2.0
           VERSION=$(echo "$RAW" | sed -E 's/^([0-9]+\.[0-9]+)(-[a-zA-Z0-9.]+)?$/\1.0\2/')
-          echo "Raw: $RAW → Semver: $VERSION"
+          # Windows MSI requires numeric-only pre-release identifiers
+          # Strip pre-release suffix on Windows (0.2.0-alpha.2 → 0.2.0)
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            VERSION=$(echo "$VERSION" | sed -E 's/-.*$//')
+          fi
+          echo "Raw: $RAW → Semver: $VERSION (runner: $RUNNER_OS)"
           # Update tauri.conf.json
           if command -v jq &>/dev/null; then
             jq --arg v "$VERSION" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
@@ -103,6 +108,9 @@ jobs:
         run: |
           RAW="${GITHUB_REF_NAME#v}"
           VERSION=$(echo "$RAW" | sed -E 's/^([0-9]+\.[0-9]+)(-[a-zA-Z0-9.]+)?$/\1.0\2/')
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            VERSION=$(echo "$VERSION" | sed -E 's/-.*$//')
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Package binary (Linux/macOS)

@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'a7eb3e43-04bb-432c-8ec0-ada2b0c8c7ac'
-  PropagateID: 'a7eb3e43-04bb-432c-8ec0-ada2b0c8c7ac'
-  ReservedCode1: '4237a0c9-40ce-4130-9958-ad78d85c75ce'
-  ReservedCode2: '4237a0c9-40ce-4130-9958-ad78d85c75ce'
+  ProduceID: '33f9cc6b-253e-4dbe-a986-2356f65767ae'
+  PropagateID: '33f9cc6b-253e-4dbe-a986-2356f65767ae'
+  ReservedCode1: '242d3b58-1b01-40a8-a5fa-c5befaf6f0e6'
+  ReservedCode2: '242d3b58-1b01-40a8-a5fa-c5befaf6f0e6'
 ---
 
 # 更新日志
@@ -17,6 +17,7 @@ AIGC:
 
 - CI 动态版本号：从 git tag 提取版本号自动写入 tauri.conf.json 和 package.json，产物文件名不再固定为 0.1.0
 - 版本号 semver 规范化：`0.2-alpha.2` → `0.2.0-alpha.2`（Tauri 要求三段式 semver，两段式会报错）
+- Windows MSI 兼容：MSI 要求预发布标识符为纯数字，Windows 构建时去掉 `alpha` 后缀（`0.2.0-alpha.2` → `0.2.0`）
 - 产物文件名带版本号：tar.gz / zip 命名改为 notecalc-{version}-{label} 格式
 - README 补充 V2 语义分析功能说明，路线图标记进度
 
