@@ -1,12 +1,25 @@
 import { evaluate } from "mathjs";
 import type { LineResult } from "../types";
+import { rules } from "./rules/engine";
+import { numberExtractionRule } from "./rules/numberExtraction";
+import { chineseDiscountRule } from "./rules/chineseDiscount";
+import { englishPercentRule } from "./rules/englishPercent";
+
+// 注册语义规则（按优先级排序）
+rules.push(
+  chineseDiscountRule, // 中文折扣优先级最高
+  englishPercentRule, // 英文百分比
+  numberExtractionRule, // 数字提取求和兜底
+);
 
 /**
  * 解析单行文本，返回计算结果
- * - 空行或纯文字返回 null
- * - 纯数字返回该数字
- * - 表达式返回计算结果
- * - 语法错误返回 null
+ *
+ * 多级管线：
+ * 1. 空行 → null
+ * 2. mathjs 表达式（四则运算、纯数字、括号）→ 直接返回
+ * 3. 语义规则引擎（中文折扣、英文百分比、数字提取求和）→ 依次尝试
+ * 4. 全部失败 → null
  */
 export function calculateLine(text: string): LineResult {
   const trimmed = text.trim();
@@ -15,15 +28,25 @@ export function calculateLine(text: string): LineResult {
     return { result: null, text: "" };
   }
 
+  // 第1级：mathjs 表达式
   try {
     const value = evaluate(trimmed);
     if (typeof value === "number" && !isNaN(value) && isFinite(value)) {
       return { result: value, text: formatNumber(value) };
     }
-    return { result: null, text: "" };
   } catch {
-    return { result: null, text: "" };
+    // mathjs 失败，继续走语义规则
   }
+
+  // 第2级：语义规则引擎
+  for (const rule of rules) {
+    const result = rule.match(trimmed);
+    if (result !== null) {
+      return result;
+    }
+  }
+
+  return { result: null, text: "" };
 }
 
 /**
