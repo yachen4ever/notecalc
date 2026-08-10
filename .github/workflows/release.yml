@@ -1,0 +1,138 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Windows x86_64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            label: windows-x64
+            ext: ".exe"
+          # Windows x86
+          - os: windows-latest
+            target: i686-pc-windows-msvc
+            label: windows-x86
+            ext: ".exe"
+          # Linux amd64
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            label: linux-amd64
+            ext: ""
+          # macOS arm64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            label: macos-arm64
+            ext: ""
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "${{ github.ref_name }}"
+          releaseBody: ""
+          releaseDraft: false
+          prerelease: true
+          args: --target ${{ matrix.target }}
+
+      - name: Extract binary (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          BINARY="notecalc"
+          if [ "${{ matrix.label }}" = "macos-arm64" ]; then
+            cp src-tauri/target/${{ matrix.target }}/release/notecalc "$BINARY${{ matrix.ext }}"
+          elif [ "${{ matrix.label }}" = "linux-amd64" ]; then
+            cp src-tauri/target/${{ matrix.target }}/release/notecalc "$BINARY${{ matrix.ext }}"
+          fi
+          chmod +x "$BINARY${{ matrix.ext }}"
+          tar czf "notecalc-${{ matrix.label }}.tar.gz" "$BINARY${{ matrix.ext }}"
+
+      - name: Extract binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $binary = "src-tauri/target/${{ matrix.target }}/release/notecalc.exe"
+          Compress-Archive -Path $binary -DestinationPath "notecalc-${{ matrix.label }}.zip"
+
+      - name: Upload binary to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            notecalc-${{ matrix.label }}.tar.gz
+            notecalc-${{ matrix.label }}.zip
+
+  build-deb:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build deb package
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "${{ github.ref_name }}"
+          releaseBody: ""
+          releaseDraft: false
+          prerelease: true
+          args: --target x86_64-unknown-linux-gnu
+
+      - name: Upload deb to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
