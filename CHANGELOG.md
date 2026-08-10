@@ -3,13 +3,30 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'a8122bee-9aef-4c7c-b1b8-729a06ac07a2'
-  PropagateID: 'a8122bee-9aef-4c7c-b1b8-729a06ac07a2'
-  ReservedCode1: 'ae5a4011-ff2b-4e78-aca2-9d892d4d430f'
-  ReservedCode2: 'ae5a4011-ff2b-4e78-aca2-9d892d4d430f'
+  ProduceID: '245cdf1b-ccb0-4b9f-9679-7f95e0d49446'
+  PropagateID: '245cdf1b-ccb0-4b9f-9679-7f95e0d49446'
+  ReservedCode1: '08a382d5-e7e3-4a38-9584-edc5cee0e740'
+  ReservedCode2: '08a382d5-e7e3-4a38-9584-edc5cee0e740'
 ---
 
 # 更新日志
+
+## v0.2.0 (2026-08-11)
+
+### V2 语义分析完成
+
+- 新增：中文百分比运算（`120的15%` → 18、`120占800的百分比` → 15、`120的百分之15` → 18）
+- 新增：单位转换规则引擎，支持 7 大类单位：
+  - 长度：km/m/cm/mm、mi/ft/in/yd、里/丈/尺/寸、海里
+  - 重量：t/kg/g/mg、lb/oz、斤/两/钱
+  - 温度：摄氏度/华氏度/开尔文（非线性特殊转换）
+  - 面积：km²/m²/cm²、ha/亩、acre/ft²
+  - 体积：L/mL、gal/cup
+  - 时间：ms/s/min/h/day
+  - 写法：`5km to mi`、`30摄氏度转华氏`、`100kg转斤`、`1英里等于多少千米`
+- 新增：浅色/深色主题切换（v0.2-alpha.3）
+
+---
 
 ## v0.2-alpha.3 (2026-08-11)
 

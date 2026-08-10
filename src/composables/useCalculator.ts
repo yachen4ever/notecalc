@@ -3,13 +3,17 @@ import type { LineResult } from "../types";
 import { rules } from "./rules/engine";
 import { numberExtractionRule } from "./rules/numberExtraction";
 import { chineseDiscountRule } from "./rules/chineseDiscount";
+import { chinesePercentRule } from "./rules/chinesePercent";
 import { englishPercentRule } from "./rules/englishPercent";
+import { unitConversionRule } from "./rules/unitConversion";
 
 // 注册语义规则（按优先级排序）
 rules.push(
-  chineseDiscountRule, // 中文折扣优先级最高
-  englishPercentRule, // 英文百分比
-  numberExtractionRule, // 数字提取求和兜底
+  chineseDiscountRule, // 中文折扣/半价/满减/涨降
+  chinesePercentRule, // 中文百分比运算（120的15%、占百分比）
+  englishPercentRule, // 英文百分比（10% off、10% of）
+  unitConversionRule, // 单位转换（5km to mi）
+  numberExtractionRule, // 数字提取求和（兜底）
 );
 
 /**
