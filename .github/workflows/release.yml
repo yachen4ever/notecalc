@@ -8,32 +8,51 @@ on:
 env:
   CARGO_INCREMENTAL: 0
 
+permissions:
+  contents: write
+
 jobs:
+  # 第一步：创建 GitHub Release（只有一个 job 创建，避免并发冲突）
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release-id: ${{ steps.create.outputs.id }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release
+        id: create
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          prerelease: true
+          body: |
+            ## ${{ github.ref_name }}
+
+            跨平台编译产物，详见 Assets。
+
+  # 第二步：跨平台并行构建
   build:
+    needs: create-release
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Windows x86_64
+          # Windows x64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             label: windows-x64
-            ext: ".exe"
           # Windows x86
           - os: windows-latest
             target: i686-pc-windows-msvc
             label: windows-x86
-            ext: ".exe"
           # Linux amd64
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             label: linux-amd64
-            ext: ""
           # macOS arm64
           - os: macos-latest
             target: aarch64-apple-darwin
             label: macos-arm64
-            ext: ""
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -53,50 +72,41 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "${{ github.ref_name }}"
-          releaseBody: ""
-          releaseDraft: false
-          prerelease: true
-          args: --target ${{ matrix.target }}
+      - name: Build Tauri (tar.gz for Linux/macOS)
+        if: runner.os != 'Windows'
+        run: npm run tauri -- build --target ${{ matrix.target }}
 
-      - name: Extract binary (Linux/macOS)
+      - name: Build Tauri (zip for Windows)
+        if: runner.os == 'Windows'
+        run: npm run tauri -- build --target ${{ matrix.target }}
+
+      - name: Package binary (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
-          BINARY="notecalc"
-          if [ "${{ matrix.label }}" = "macos-arm64" ]; then
-            cp src-tauri/target/${{ matrix.target }}/release/notecalc "$BINARY${{ matrix.ext }}"
-          elif [ "${{ matrix.label }}" = "linux-amd64" ]; then
-            cp src-tauri/target/${{ matrix.target }}/release/notecalc "$BINARY${{ matrix.ext }}"
-          fi
-          chmod +x "$BINARY${{ matrix.ext }}"
-          tar czf "notecalc-${{ matrix.label }}.tar.gz" "$BINARY${{ matrix.ext }}"
+          cd src-tauri/target/${{ matrix.target }}/release
+          tar czf ../../../notecalc-${{ matrix.label }}.tar.gz notecalc
 
-      - name: Extract binary (Windows)
+      - name: Package binary (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $binary = "src-tauri/target/${{ matrix.target }}/release/notecalc.exe"
-          Compress-Archive -Path $binary -DestinationPath "notecalc-${{ matrix.label }}.zip"
+          Compress-Archive -Path "src-tauri/target/${{ matrix.target }}/release/notecalc.exe" -DestinationPath "notecalc-${{ matrix.label }}.zip"
 
-      - name: Upload binary to release
+      - name: Upload to release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             notecalc-${{ matrix.label }}.tar.gz
             notecalc-${{ matrix.label }}.zip
 
+  # 第三步：构建 Linux deb 包
   build-deb:
+    needs: create-release
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -114,22 +124,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install npm dependencies
         run: npm ci
 
       - name: Build deb package
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "${{ github.ref_name }}"
-          releaseBody: ""
-          releaseDraft: false
-          prerelease: true
-          args: --target x86_64-unknown-linux-gnu
+        run: npm run tauri -- build --target x86_64-unknown-linux-gnu
 
       - name: Upload deb to release
         uses: softprops/action-gh-release@v2
