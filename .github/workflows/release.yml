@@ -58,6 +58,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set version from tag
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Version: $VERSION"
+          # Update tauri.conf.json
+          if command -v jq &>/dev/null; then
+            jq --arg v "$VERSION" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
+          else
+            # macOS runners may not have jq pre-installed
+            python3 -c "import json; f='src-tauri/tauri.conf.json'; d=json.load(open(f)); d['version']='$VERSION'; json.dump(d, open(f,'w'), indent=2)"
+          fi
+          # Update package.json
+          python3 -c "import json; f='package.json'; d=json.load(open(f)); d['version']='$VERSION'; json.dump(d, open(f,'w'), indent=2)"
+
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -80,21 +95,26 @@ jobs:
       - name: Build Tauri
         run: npm run tauri -- build --target ${{ matrix.target }}
 
+      - name: Get version
+        id: ver
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
       - name: Package binary (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
-          tar czf notecalc-${{ matrix.label }}.tar.gz -C src-tauri/target/${{ matrix.target }}/release notecalc
+          tar czf notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}.tar.gz -C src-tauri/target/${{ matrix.target }}/release notecalc
 
       - name: Package binary (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Compress-Archive -Path "src-tauri/target/${{ matrix.target }}/release/notecalc.exe" -DestinationPath "notecalc-${{ matrix.label }}.zip"
+          Compress-Archive -Path "src-tauri/target/${{ matrix.target }}/release/notecalc.exe" -DestinationPath "notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}.zip"
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
         with:
-          files: notecalc-${{ matrix.label }}.*
+          files: notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}.*
 
   # 第三步：构建 Linux deb 包
   build-deb:
@@ -102,6 +122,14 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set version from tag
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Version: $VERSION"
+          jq --arg v "$VERSION" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
+          python3 -c "import json; f='package.json'; d=json.load(open(f)); d['version']='$VERSION'; json.dump(d, open(f,'w'), indent=2)"
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable

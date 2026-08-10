@@ -3,13 +3,23 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'ed174698-f31f-40fb-bad9-042ac7729941'
-  PropagateID: 'ed174698-f31f-40fb-bad9-042ac7729941'
-  ReservedCode1: 'f8182faa-bb29-4b1d-925a-b4467fc8ff64'
-  ReservedCode2: 'f8182faa-bb29-4b1d-925a-b4467fc8ff64'
+  ProduceID: 'cf4b12b9-3ff0-4013-bf5f-72593a62aabb'
+  PropagateID: 'cf4b12b9-3ff0-4013-bf5f-72593a62aabb'
+  ReservedCode1: '3ccd539d-a2db-4d77-81d4-c960f7be62a0'
+  ReservedCode2: '3ccd539d-a2db-4d77-81d4-c960f7be62a0'
 ---
 
 # 更新日志
+
+## v0.2-alpha.2 (2026-08-11)
+
+### 修复
+
+- CI 动态版本号：从 git tag 提取版本号自动写入 tauri.conf.json 和 package.json，产物文件名不再固定为 0.1.0
+- 产物文件名带版本号：tar.gz / zip 命名改为 notecalc-{version}-{label} 格式
+- README 补充 V2 语义分析功能说明，路线图标记进度
+
+---
 
 ## v0.2-alpha.1 (2026-08-11)
 
