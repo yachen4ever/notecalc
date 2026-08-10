@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'cf4b12b9-3ff0-4013-bf5f-72593a62aabb'
-  PropagateID: 'cf4b12b9-3ff0-4013-bf5f-72593a62aabb'
-  ReservedCode1: '3ccd539d-a2db-4d77-81d4-c960f7be62a0'
-  ReservedCode2: '3ccd539d-a2db-4d77-81d4-c960f7be62a0'
+  ProduceID: 'a7eb3e43-04bb-432c-8ec0-ada2b0c8c7ac'
+  PropagateID: 'a7eb3e43-04bb-432c-8ec0-ada2b0c8c7ac'
+  ReservedCode1: '4237a0c9-40ce-4130-9958-ad78d85c75ce'
+  ReservedCode2: '4237a0c9-40ce-4130-9958-ad78d85c75ce'
 ---
 
 # 更新日志
@@ -16,6 +16,7 @@ AIGC:
 ### 修复
 
 - CI 动态版本号：从 git tag 提取版本号自动写入 tauri.conf.json 和 package.json，产物文件名不再固定为 0.1.0
+- 版本号 semver 规范化：`0.2-alpha.2` → `0.2.0-alpha.2`（Tauri 要求三段式 semver，两段式会报错）
 - 产物文件名带版本号：tar.gz / zip 命名改为 notecalc-{version}-{label} 格式
 - README 补充 V2 语义分析功能说明，路线图标记进度
 
