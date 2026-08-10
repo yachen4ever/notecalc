@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { calculateLine } from "../composables/useCalculator";
+import { calculateLine, tokenize } from "../composables/useCalculator";
 
 const props = defineProps<{
   index: number;
@@ -19,6 +19,9 @@ const inputRef = ref<HTMLInputElement | null>(null);
 
 // 计算结果（响应式，text 变化时自动重算）
 const lineResult = computed(() => calculateLine(props.text));
+
+// 语法高亮 tokens（响应式）
+const tokens = computed(() => tokenize(props.text));
 
 // 键盘交互
 function onKeydown(e: KeyboardEvent) {
@@ -55,6 +58,17 @@ defineExpose({ focus });
 
     <!-- 输入区 + 高亮叠加 -->
     <div class="input-wrap">
+      <!-- 高亮叠加层：渲染带颜色的 tokens -->
+      <div class="highlight-layer" aria-hidden="true">
+        <span
+          v-for="(tok, i) in tokens"
+          :key="i"
+          :class="tok.cls"
+        >{{ tok.text }}</span>
+        <!-- 末尾占位，防止空行高度塌陷 -->
+        <span v-if="tokens.length === 0">&nbsp;</span>
+      </div>
+      <!-- 真正的 input：透明文字，承载光标和编辑 -->
       <input
         ref="inputRef"
         class="line-input"
@@ -102,17 +116,36 @@ defineExpose({ focus });
   align-items: center;
 }
 
+/* 高亮叠加层：和 input 完全重合，只渲染颜色文字 */
+.highlight-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 32px;
+  white-space: pre;
+  overflow: hidden;
+  pointer-events: none;
+  color: #999; /* 非高亮文字（纯文字备注）灰色 */
+}
+
 .line-input {
   width: 100%;
   height: 100%;
   border: none;
   outline: none;
   background: transparent;
-  color: #e0e0e0;
+  /* 输入文字透明，用户只看到高亮层的颜色 */
+  color: transparent;
+  caret-color: #e0e0e0;
   font-family: inherit;
   font-size: 15px;
   padding: 0;
   user-select: text;
+  position: relative;
+  z-index: 1;
 }
 
 .line-input::placeholder {
