@@ -15,6 +15,14 @@ const lines = ref<Line[]>([
 // 行 ref 引用
 const lineRefs = ref<Array<InstanceType<typeof LineRow> | null>>([]);
 
+// 主题
+const theme = ref<"dark" | "light">("dark");
+
+function toggleTheme() {
+  theme.value = theme.value === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", theme.value);
+}
+
 // 计算汇总
 const summary = computed(() => {
   let total = 0;
@@ -81,6 +89,9 @@ onMounted(() => {
     <!-- 标题栏 -->
     <header class="title-bar" data-tauri-drag-region>
       <span class="title-text">notecalc</span>
+      <button class="theme-toggle" @click="toggleTheme" title="切换主题">
+        {{ theme === "dark" ? "\u2600" : "\u263d" }}
+      </button>
     </header>
 
     <!-- 工作区 -->
@@ -117,16 +128,35 @@ onMounted(() => {
   height: 38px;
   display: flex;
   align-items: center;
-  padding: 0 16px;
-  background-color: #111;
-  border-bottom: 1px solid #2a2a2a;
+  justify-content: space-between;
+  padding: 0 12px 0 16px;
+  background-color: var(--bg-titlebar);
+  border-bottom: 1px solid var(--border-titlebar);
   -webkit-app-region: drag;
 }
 
 .title-text {
   font-size: 13px;
-  color: #666;
+  color: var(--text-muted);
   letter-spacing: 1px;
+}
+
+.theme-toggle {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--text-muted);
+  -webkit-app-region: no-drag;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.1s, color 0.1s;
+  line-height: 1;
+}
+
+.theme-toggle:hover {
+  background-color: var(--bg-row-hover);
+  color: var(--text-primary);
 }
 
 .worksheet {

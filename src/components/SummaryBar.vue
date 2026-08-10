@@ -27,13 +27,13 @@ defineProps<{
   align-items: center;
   height: 48px;
   padding: 0 16px;
-  background-color: #111;
-  border-top: 1px solid #333;
+  background-color: var(--bg-summary);
+  border-top: 1px solid var(--border-summary);
 }
 
 .summary-info {
   font-size: 12px;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .summary-total {
@@ -44,13 +44,13 @@ defineProps<{
 
 .summary-label {
   font-size: 12px;
-  color: #888;
+  color: var(--text-label);
 }
 
 .summary-value {
   font-size: 20px;
   font-weight: 600;
-  color: #22d3ee;
+  color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
 </style>

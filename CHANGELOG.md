@@ -3,13 +3,21 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '33f9cc6b-253e-4dbe-a986-2356f65767ae'
-  PropagateID: '33f9cc6b-253e-4dbe-a986-2356f65767ae'
-  ReservedCode1: '242d3b58-1b01-40a8-a5fa-c5befaf6f0e6'
-  ReservedCode2: '242d3b58-1b01-40a8-a5fa-c5befaf6f0e6'
+  ProduceID: 'a8122bee-9aef-4c7c-b1b8-729a06ac07a2'
+  PropagateID: 'a8122bee-9aef-4c7c-b1b8-729a06ac07a2'
+  ReservedCode1: 'ae5a4011-ff2b-4e78-aca2-9d892d4d430f'
+  ReservedCode2: 'ae5a4011-ff2b-4e78-aca2-9d892d4d430f'
 ---
 
 # 更新日志
+
+## v0.2-alpha.3 (2026-08-11)
+
+### 新增
+
+- 浅色/深色主题切换：标题栏切换按钮，CSS 变量统一管理主题色，平滑过渡动画
+
+---
 
 ## v0.2-alpha.2 (2026-08-11)
 

@@ -98,11 +98,11 @@ defineExpose({ focus });
 }
 
 .line-row:hover {
-  background-color: #222;
+  background-color: var(--bg-row-hover);
 }
 
 .line-number {
-  color: #555;
+  color: var(--text-muted);
   font-size: 12px;
   text-align: right;
   padding-right: 12px;
@@ -128,7 +128,7 @@ defineExpose({ focus });
   white-space: pre;
   overflow: hidden;
   pointer-events: none;
-  color: #999; /* 非高亮文字（纯文字备注）灰色 */
+  color: var(--text-muted); /* 非高亮文字（纯文字备注）灰色 */
 }
 
 .line-input {
@@ -139,7 +139,7 @@ defineExpose({ focus });
   background: transparent;
   /* 输入文字透明，用户只看到高亮层的颜色 */
   color: transparent;
-  caret-color: #e0e0e0;
+  caret-color: var(--caret);
   font-family: inherit;
   font-size: 15px;
   padding: 0;
@@ -149,16 +149,16 @@ defineExpose({ focus });
 }
 
 .line-input::placeholder {
-  color: #444;
+  color: var(--text-dim);
 }
 
 .line-result {
   text-align: right;
-  color: #fff;
+  color: var(--text-result);
   font-size: 15px;
   font-variant-numeric: tabular-nums;
   padding-left: 16px;
-  border-left: 1px solid #333;
+  border-left: 1px solid var(--border-row);
   height: 100%;
   display: flex;
   align-items: center;
@@ -166,6 +166,6 @@ defineExpose({ focus });
 }
 
 .line-result.dim {
-  color: #444;
+  color: var(--text-dim);
 }
 </style>

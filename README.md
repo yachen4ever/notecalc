@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '6dec4771-e114-41ea-bd15-26c2e21b7bab'
-  PropagateID: '6dec4771-e114-41ea-bd15-26c2e21b7bab'
-  ReservedCode1: 'd7d97a18-caf3-4f1f-bb55-57c478876c76'
-  ReservedCode2: 'd7d97a18-caf3-4f1f-bb55-57c478876c76'
+  ProduceID: '73efe9f1-8141-4f11-a0ac-3498e2d79eb5'
+  PropagateID: '73efe9f1-8141-4f11-a0ac-3498e2d79eb5'
+  ReservedCode1: 'f050cc50-7236-40b3-933a-b315183acc7e'
+  ReservedCode2: 'f050cc50-7236-40b3-933a-b315183acc7e'
 ---
 
 # notecalc
@@ -21,7 +21,7 @@ AIGC:
 - 四则运算 + 括号（mathjs）
 - 语法高亮：数字蓝色、运算符青色、纯文字灰色
 - 结果右对齐，底部自动汇总
-- 暗色主题
+- 浅色/深色主题切换
 
 ### V2 — 语义分析（进行中）
 - 中文折扣与百分比：打8折、半价、满200减50、涨10%、降10%
