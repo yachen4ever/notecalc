@@ -64,21 +64,22 @@ jobs:
           RAW="${GITHUB_REF_NAME#v}"
           # Normalize to semver: 0.2-alpha.2 → 0.2.0-alpha.2, 0.2 → 0.2.0
           VERSION=$(echo "$RAW" | sed -E 's/^([0-9]+\.[0-9]+)(-[a-zA-Z0-9.]+)?$/\1.0\2/')
-          # Windows MSI requires numeric-only pre-release identifiers
-          # Strip pre-release suffix on Windows (0.2.0-alpha.2 → 0.2.0)
+          # Windows MSI (WiX) requires numeric-only ProductVersion, so tauri.conf.json
+          # uses the suffix-stripped version. Artifact filenames keep the full version.
+          TAURI_VERSION="$VERSION"
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            VERSION=$(echo "$VERSION" | sed -E 's/-.*$//')
+            TAURI_VERSION=$(echo "$VERSION" | sed -E 's/-.*$//')
           fi
-          echo "Raw: $RAW → Semver: $VERSION (runner: $RUNNER_OS)"
+          echo "Raw: $RAW → File: $VERSION, Tauri: $TAURI_VERSION (runner: $RUNNER_OS)"
           # Update tauri.conf.json
           if command -v jq &>/dev/null; then
-            jq --arg v "$VERSION" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
+            jq --arg v "$TAURI_VERSION" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
           else
             # macOS runners may not have jq pre-installed
-            python3 -c "import json; f='src-tauri/tauri.conf.json'; d=json.load(open(f)); d['version']='$VERSION'; json.dump(d, open(f,'w'), indent=2)"
+            python3 -c "import json; f='src-tauri/tauri.conf.json'; d=json.load(open(f)); d['version']='$TAURI_VERSION'; json.dump(d, open(f,'w'), indent=2)"
           fi
           # Update package.json
-          python3 -c "import json; f='package.json'; d=json.load(open(f)); d['version']='$VERSION'; json.dump(d, open(f,'w'), indent=2)"
+          python3 -c "import json; f='package.json'; d=json.load(open(f)); d['version']='$TAURI_VERSION'; json.dump(d, open(f,'w'), indent=2)"
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -102,15 +103,12 @@ jobs:
       - name: Build Tauri
         run: npm run tauri -- build --target ${{ matrix.target }}
 
-      - name: Get version
+      - name: Get version (full, for artifact filenames)
         id: ver
         shell: bash
         run: |
           RAW="${GITHUB_REF_NAME#v}"
           VERSION=$(echo "$RAW" | sed -E 's/^([0-9]+\.[0-9]+)(-[a-zA-Z0-9.]+)?$/\1.0\2/')
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            VERSION=$(echo "$VERSION" | sed -E 's/-.*$//')
-          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Package binary (Linux/macOS)
@@ -122,7 +120,9 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Compress-Archive -Path "src-tauri/target/${{ matrix.target }}/release/notecalc.exe" -DestinationPath "notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}.zip"
+          $exe = "src-tauri/target/${{ matrix.target }}/release/notecalc.exe"
+          Compress-Archive -Path $exe -DestinationPath "notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}.zip"
+          Copy-Item $exe -Destination "notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}.exe"
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
