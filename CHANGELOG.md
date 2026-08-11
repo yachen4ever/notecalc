@@ -3,13 +3,28 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '38782d66-67b2-4bdf-8bf1-de810311031e'
-  PropagateID: '38782d66-67b2-4bdf-8bf1-de810311031e'
-  ReservedCode1: '69765c9f-afa1-438c-96f0-95d0efffffff'
-  ReservedCode2: '69765c9f-afa1-438c-96f0-95d0efffffff'
+  ProduceID: '8721e2e8-25cc-4dbe-8890-eecc85fe4a65'
+  PropagateID: '8721e2e8-25cc-4dbe-8890-eecc85fe4a65'
+  ReservedCode1: 'dcec6aa9-f305-474d-ac32-414169b02168'
+  ReservedCode2: 'dcec6aa9-f305-474d-ac32-414169b02168'
 ---
 
 # 更新日志
+
+## v0.4.0-alpha.1 (2026-08-11)
+
+### V4 变量引用 + 行间依赖 + 聚合函数
+
+- 新增：行引用 `l1` / `line2`，可引用其他行的计算结果参与运算
+- 新增：命名变量 `单价 = 100`，后续行可直接用 `单价 * 12` 引用
+- 新增：聚合函数（平均/最大/最小/总和），支持中文和英文关键词
+  - `平均 100 200 300` → 200、`最大 34 56 78` → 78、`sum 10 20 30` → 60
+- 新增：语法高亮增强——变量引用（紫色）、赋值符号（橙色）
+- 重构：`buildLineResults` 统一计算整个工作表，支持变量上下文传递
+- 重构：`LineRow` 接受 `result` prop，不再独立计算（保证变量引用一致性）
+- 重构：导出功能（CSV/Markdown）使用 `buildLineResults`，正确处理变量引用行
+
+---
 
 ## v0.3.0-alpha.1 (2026-08-11)
 

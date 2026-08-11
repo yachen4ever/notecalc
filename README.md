@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '0142070b-05f9-4599-aa78-0254cb1f15c5'
-  PropagateID: '0142070b-05f9-4599-aa78-0254cb1f15c5'
-  ReservedCode1: '7cfd7ce4-ee12-4aba-ad1d-646674cea255'
-  ReservedCode2: '7cfd7ce4-ee12-4aba-ad1d-646674cea255'
+  ProduceID: '246ef83c-444c-4f88-bcde-68d746ca9929'
+  PropagateID: '246ef83c-444c-4f88-bcde-68d746ca9929'
+  ReservedCode1: '1d1cdd6d-dc09-4ed0-85c3-9cb1634edf47'
+  ReservedCode2: '1d1cdd6d-dc09-4ed0-85c3-9cb1634edf47'
 ---
 
 # notecalc
@@ -35,6 +35,11 @@ AIGC:
 - 多工作表侧边栏：新增 / 重命名 / 切换 / 删除，每表独立数据
 - 本地持久化：自动保存，重启不丢失（JSON 文件存储）
 - 导入导出：JSON 全量导出/导入、CSV 导出、Markdown 导出
+
+### V4 — 变量引用 + 聚合函数
+- 行引用：`l1` / `line2` 引用其他行的计算结果
+- 命名变量：`单价 = 100`，后续行用 `单价 * 12` 引用
+- 聚合函数：`平均` / `最大` / `最小` / `总和`（avg/max/min/sum）
 
 ## 技术栈
 
@@ -77,7 +82,7 @@ npm run tauri build
 - **V1** ✅ 四则运算+括号、行编辑器、实时结果、汇总、语法高亮、浅色/深色主题切换
 - **V2** ✅ 语义分析：中文折扣、中文百分比、英文百分比、单位转换、数字提取求和
 - **V3** ✅ 多工作表、本地持久化、导入导出（JSON/CSV/Markdown）
-- **V4** 变量引用、行间依赖、自然语言增强
+- **V4** ✅ 变量引用（l1/line2 + 命名变量）、聚合函数（平均/最大/最小/总和）
 
 ## License
 

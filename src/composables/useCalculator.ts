@@ -6,6 +6,7 @@ import { chineseDiscountRule } from "./rules/chineseDiscount";
 import { chinesePercentRule } from "./rules/chinesePercent";
 import { englishPercentRule } from "./rules/englishPercent";
 import { unitConversionRule } from "./rules/unitConversion";
+import { aggregateRule } from "./rules/aggregate";
 
 // 注册语义规则（按优先级排序）
 rules.push(
@@ -13,6 +14,7 @@ rules.push(
   chinesePercentRule, // 中文百分比运算（120的15%、占百分比）
   englishPercentRule, // 英文百分比（10% off、10% of）
   unitConversionRule, // 单位转换（5km to mi）
+  aggregateRule, // 聚合函数（平均/最大/最小/总和）
   numberExtractionRule, // 数字提取求和（兜底）
 );
 
@@ -98,13 +100,14 @@ export interface HighlightToken {
 
 /**
  * 语法高亮：将文本转为 token 数组
- * V1：数字蓝色，运算符青色，其余默认色
+ * V4：数字蓝色、运算符青色、行引用(l1/line2)和命名变量紫色、赋值箭头橙色、纯文字灰色
  */
 export function tokenize(text: string): HighlightToken[] {
   if (!text) return [];
 
   const tokens: HighlightToken[] = [];
-  const regex = /(\d[\d,]*\.?\d*)|([+\-*/()])/g;
+  // 匹配：数字 | 运算符 | 行引用(l1/line2) | 赋值(=) | 命名变量
+  const regex = /(\d[\d,]*\.?\d*)|([+\-*/()])|(?<![a-zA-Z])(l|line)(\d+)|([=])/gi;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
@@ -116,6 +119,12 @@ export function tokenize(text: string): HighlightToken[] {
       tokens.push({ text: match[0], cls: "tok-num" });
     } else if (match[2]) {
       tokens.push({ text: match[0], cls: "tok-op" });
+    } else if (match[3] && match[4]) {
+      // 行引用 l1 / line2
+      tokens.push({ text: match[0], cls: "tok-var" });
+    } else if (match[5]) {
+      // 赋值 =
+      tokens.push({ text: match[0], cls: "tok-assign" });
     }
     lastIndex = match.index + match[0].length;
   }

@@ -3,10 +3,10 @@ import { ref, computed, nextTick, onMounted, watch } from "vue";
 import LineRow from "./components/LineRow.vue";
 import SummaryBar from "./components/SummaryBar.vue";
 import Sidebar from "./components/Sidebar.vue";
-import { calculateLine } from "./composables/useCalculator";
+import { buildLineResults } from "./composables/useVariables";
 import { loadData, saveData } from "./composables/useStorage";
 import { exportJSON, exportCSV, exportMarkdown, importJSON } from "./composables/useImportExport";
-import type { Line, Worksheet, WorksheetData } from "./types";
+import type { Line, Worksheet, WorksheetData, LineResult } from "./types";
 
 // ===== 工作表数据 =====
 let nextLineId = 1;
@@ -31,14 +31,15 @@ function toggleTheme() {
   document.documentElement.setAttribute("data-theme", theme.value);
 }
 
-// ===== 计算汇总 =====
+// ===== 计算汇总（V4：含变量引用的完整构建） =====
+const lineResults = computed(() => buildLineResults(lines.value));
+
 const summary = computed(() => {
   let total = 0;
   let count = 0;
-  for (const line of lines.value) {
-    const { result } = calculateLine(line.text);
-    if (result !== null) {
-      total += result;
+  for (const r of lineResults.value) {
+    if (r.result !== null) {
+      total += r.result;
       count++;
     }
   }
@@ -240,6 +241,7 @@ onMounted(async () => {
           :ref="(el) => (lineRefs[index] = el as InstanceType<typeof LineRow> | null)"
           :index="index"
           :text="line.text"
+          :result="lineResults[index] as LineResult"
           @update:text="(val) => updateText(index, val)"
           @new-line="newLine(index)"
           @delete-line="deleteLine(index)"

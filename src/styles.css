@@ -36,6 +36,8 @@ body,
   --accent: #22d3ee;
   --tok-num: #7dd3fc;
   --tok-op: #22d3ee;
+  --tok-var: #c084fc;
+  --tok-assign: #fb923c;
   --scrollbar: #333;
   --scrollbar-hover: #444;
   --caret: #e0e0e0;
@@ -58,6 +60,8 @@ body,
   --accent: #0891b2;
   --tok-num: #0284c7;
   --tok-op: #0891b2;
+  --tok-var: #9333ea;
+  --tok-assign: #ea580c;
   --scrollbar: #ccc;
   --scrollbar-hover: #aaa;
   --caret: #1a1a1a;
@@ -78,6 +82,16 @@ body {
 
 .tok-op {
   color: var(--tok-op);
+}
+
+.tok-var {
+  color: var(--tok-var);
+  font-weight: 600;
+}
+
+.tok-assign {
+  color: var(--tok-assign);
+  font-weight: 700;
 }
 
 /* 滚动条 */

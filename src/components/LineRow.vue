@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { calculateLine, tokenize } from "../composables/useCalculator";
+import { tokenize } from "../composables/useCalculator";
+import type { LineResult } from "../types";
 
 const props = defineProps<{
   index: number;
   text: string;
+  result?: LineResult;
 }>();
 
 const emit = defineEmits<{
@@ -17,8 +19,8 @@ const emit = defineEmits<{
 
 const inputRef = ref<HTMLInputElement | null>(null);
 
-// 计算结果（响应式，text 变化时自动重算）
-const lineResult = computed(() => calculateLine(props.text));
+// 计算结果（V4：由父组件传入，支持变量引用）
+const lineResult = computed<LineResult>(() => props.result ?? { result: null, text: "" });
 
 // 语法高亮 tokens（响应式）
 const tokens = computed(() => tokenize(props.text));
