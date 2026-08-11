@@ -3,13 +3,25 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '245cdf1b-ccb0-4b9f-9679-7f95e0d49446'
-  PropagateID: '245cdf1b-ccb0-4b9f-9679-7f95e0d49446'
-  ReservedCode1: '08a382d5-e7e3-4a38-9584-edc5cee0e740'
-  ReservedCode2: '08a382d5-e7e3-4a38-9584-edc5cee0e740'
+  ProduceID: '38782d66-67b2-4bdf-8bf1-de810311031e'
+  PropagateID: '38782d66-67b2-4bdf-8bf1-de810311031e'
+  ReservedCode1: '69765c9f-afa1-438c-96f0-95d0efffffff'
+  ReservedCode2: '69765c9f-afa1-438c-96f0-95d0efffffff'
 ---
 
 # 更新日志
+
+## v0.3.0-alpha.1 (2026-08-11)
+
+### V3 多工作表 + 持久化 + 导入导出
+
+- 新增：多工作表侧边栏（新增 / 重命名 / 删除 / 切换），每个工作表独立行数据
+- 新增：本地持久化，自动保存到 `app_data_dir/notecalc.json`，重启不丢失（500ms 防抖）
+- 新增：导入导出（JSON 全量导出/导入、CSV 单表导出、Markdown 单表导出）
+- 新增：Rust 后端 `load_data` / `save_data` 命令，前端通过 Tauri invoke 调用
+- 调整：窗口默认尺寸 720×520 → 960×600，最小尺寸 480×360 → 640×400（侧边栏占 180px）
+
+---
 
 ## v0.2.0 (2026-08-11)
 

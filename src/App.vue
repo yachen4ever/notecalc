@@ -1,21 +1,29 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted } from "vue";
+import { ref, computed, nextTick, onMounted, watch } from "vue";
 import LineRow from "./components/LineRow.vue";
 import SummaryBar from "./components/SummaryBar.vue";
+import Sidebar from "./components/Sidebar.vue";
 import { calculateLine } from "./composables/useCalculator";
-import type { Line } from "./types";
+import { loadData, saveData } from "./composables/useStorage";
+import { exportJSON, exportCSV, exportMarkdown, importJSON } from "./composables/useImportExport";
+import type { Line, Worksheet, WorksheetData } from "./types";
 
-let nextId = 1;
+// ===== 工作表数据 =====
+let nextLineId = 1;
 
-// 行数据
-const lines = ref<Line[]>([
-  { id: nextId++, text: "" },
-]);
+const sheets = ref<Worksheet[]>([]);
+const activeSheetId = ref("");
+
+const activeSheet = computed(() =>
+  sheets.value.find((s) => s.id === activeSheetId.value) ?? sheets.value[0]
+);
+
+const lines = computed(() => activeSheet.value?.lines ?? []);
 
 // 行 ref 引用
 const lineRefs = ref<Array<InstanceType<typeof LineRow> | null>>([]);
 
-// 主题
+// ===== 主题 =====
 const theme = ref<"dark" | "light">("dark");
 
 function toggleTheme() {
@@ -23,7 +31,7 @@ function toggleTheme() {
   document.documentElement.setAttribute("data-theme", theme.value);
 }
 
-// 计算汇总
+// ===== 计算汇总 =====
 const summary = computed(() => {
   let total = 0;
   let count = 0;
@@ -37,30 +45,26 @@ const summary = computed(() => {
   return { total: count > 0 ? total : null, count };
 });
 
-// 更新行文本
+// ===== 行操作 =====
 function updateText(index: number, value: string) {
   lines.value[index].text = value;
 }
 
-// 新增行
 async function newLine(index: number) {
-  const item: Line = { id: nextId++, text: "" };
+  const item: Line = { id: nextLineId++, text: "" };
   lines.value.splice(index + 1, 0, item);
   await nextTick();
   lineRefs.value[index + 1]?.focus();
 }
 
-// 删除行
 async function deleteLine(index: number) {
   if (lines.value.length <= 1) return;
-
   lines.value.splice(index, 1);
   const target = Math.max(0, index - 1);
   await nextTick();
   lineRefs.value[target]?.focus();
 }
 
-// 上下移动焦点
 async function moveUp(index: number) {
   if (index > 0) {
     await nextTick();
@@ -73,55 +77,197 @@ async function moveDown(index: number) {
     await nextTick();
     lineRefs.value[index + 1]?.focus();
   } else {
-    // 最后一行按 Down 也新建一行
     await newLine(index);
   }
 }
 
-// 初始化：聚焦第一行
-onMounted(() => {
+// ===== 工作表操作 =====
+function createSheet(name?: string): Worksheet {
+  const id = `sheet_${Date.now()}`;
+  return {
+    id,
+    name: name || `工作表 ${sheets.value.length + 1}`,
+    lines: [{ id: nextLineId++, text: "" }],
+  };
+}
+
+function addSheet() {
+  const sheet = createSheet();
+  sheets.value.push(sheet);
+  activeSheetId.value = sheet.id;
+}
+
+function selectSheet(id: string) {
+  activeSheetId.value = id;
+  nextTick(() => lineRefs.value[0]?.focus());
+}
+
+function renameSheet(id: string, name: string) {
+  const sheet = sheets.value.find((s) => s.id === id);
+  if (sheet) sheet.name = name;
+}
+
+function deleteSheet(id: string) {
+  if (sheets.value.length <= 1) return;
+  const idx = sheets.value.findIndex((s) => s.id === id);
+  if (idx === -1) return;
+  sheets.value.splice(idx, 1);
+  if (activeSheetId.value === id) {
+    activeSheetId.value = sheets.value[Math.max(0, idx - 1)].id;
+  }
+}
+
+// ===== 持久化 =====
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    const data: WorksheetData = {
+      sheets: sheets.value,
+      active_sheet_id: activeSheetId.value,
+    };
+    await saveData(data);
+  }, 500);
+}
+
+// 监听数据变化，自动保存
+watch([sheets, activeSheetId], scheduleSave, { deep: true });
+
+// ===== 导入导出 =====
+function doExportJSON() {
+  const json = exportJSON(sheets.value);
+  downloadFile(`${activeSheet.value.name}.json`, json, "application/json");
+}
+
+function doExportCSV() {
+  const csv = exportCSV(activeSheet.value);
+  downloadFile(`${activeSheet.value.name}.csv`, csv, "text/csv");
+}
+
+function doExportMarkdown() {
+  const md = exportMarkdown(activeSheet.value);
+  downloadFile(`${activeSheet.value.name}.md`, md, "text/markdown");
+}
+
+function downloadFile(filename: string, content: string, mime: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function doImport() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+  input.onchange = () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const imported = importJSON(reader.result as string);
+      if (imported && imported.length > 0) {
+        sheets.value = imported;
+        activeSheetId.value = imported[0].id;
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// ===== 初始化 =====
+onMounted(async () => {
+  const data = await loadData();
+  if (data && data.sheets.length > 0) {
+    sheets.value = data.sheets;
+    activeSheetId.value = data.active_sheet_id || data.sheets[0].id;
+    // 恢复 nextLineId
+    const maxId = Math.max(
+      ...data.sheets.flatMap((s) => s.lines.map((l) => l.id)),
+      0
+    );
+    nextLineId = maxId + 1;
+  } else {
+    const sheet = createSheet("工作表 1");
+    sheets.value = [sheet];
+    activeSheetId.value = sheet.id;
+  }
+  await nextTick();
   lineRefs.value[0]?.focus();
 });
 </script>
 
 <template>
   <div class="app">
-    <!-- 标题栏 -->
-    <header class="title-bar" data-tauri-drag-region>
-      <span class="title-text">notecalc</span>
-      <button class="theme-toggle" @click="toggleTheme" title="切换主题">
-        {{ theme === "dark" ? "\u2600" : "\u263d" }}
-      </button>
-    </header>
+    <!-- 侧边栏 -->
+    <Sidebar
+      :sheets="sheets"
+      :active-sheet-id="activeSheetId"
+      @select-sheet="selectSheet"
+      @add-sheet="addSheet"
+      @rename-sheet="renameSheet"
+      @delete-sheet="deleteSheet"
+    />
 
-    <!-- 工作区 -->
-    <main class="worksheet">
-      <LineRow
-        v-for="(line, index) in lines"
-        :key="line.id"
-        :ref="(el) => (lineRefs[index] = el as InstanceType<typeof LineRow> | null)"
-        :index="index"
-        :text="line.text"
-        @update:text="(val) => updateText(index, val)"
-        @new-line="newLine(index)"
-        @delete-line="deleteLine(index)"
-        @move-up="moveUp(index)"
-        @move-down="moveDown(index)"
-      />
-    </main>
+    <!-- 主区域 -->
+    <div class="main">
+      <!-- 标题栏 -->
+      <header class="title-bar" data-tauri-drag-region>
+        <div class="title-left">
+          <span class="sheet-name-badge">{{ activeSheet?.name }}</span>
+        </div>
+        <div class="title-right">
+          <button class="title-btn" @click="doExportJSON" title="导出 JSON">JSON</button>
+          <button class="title-btn" @click="doExportCSV" title="导出 CSV">CSV</button>
+          <button class="title-btn" @click="doExportMarkdown" title="导出 Markdown">MD</button>
+          <button class="title-btn" @click="doImport" title="导入 JSON">导入</button>
+          <button class="theme-toggle" @click="toggleTheme" title="切换主题">
+            {{ theme === "dark" ? "\u2600" : "\u263d" }}
+          </button>
+        </div>
+      </header>
 
-    <!-- 汇总栏 -->
-    <footer>
-      <SummaryBar :total="summary.total" :count="summary.count" />
-    </footer>
+      <!-- 工作区 -->
+      <main class="worksheet">
+        <LineRow
+          v-for="(line, index) in lines"
+          :key="line.id"
+          :ref="(el) => (lineRefs[index] = el as InstanceType<typeof LineRow> | null)"
+          :index="index"
+          :text="line.text"
+          @update:text="(val) => updateText(index, val)"
+          @new-line="newLine(index)"
+          @delete-line="deleteLine(index)"
+          @move-up="moveUp(index)"
+          @move-down="moveDown(index)"
+        />
+      </main>
+
+      <!-- 汇总栏 -->
+      <footer>
+        <SummaryBar :total="summary.total" :count="summary.count" />
+      </footer>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .app {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   height: 100vh;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .title-bar {
@@ -129,16 +275,45 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px 0 16px;
+  padding: 0 12px;
   background-color: var(--bg-titlebar);
   border-bottom: 1px solid var(--border-titlebar);
   -webkit-app-region: drag;
 }
 
-.title-text {
+.title-left {
+  display: flex;
+  align-items: center;
+}
+
+.sheet-name-badge {
   font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.title-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  -webkit-app-region: no-drag;
+}
+
+.title-btn {
+  background: none;
+  border: none;
+  font-size: 11px;
+  cursor: pointer;
   color: var(--text-muted);
-  letter-spacing: 1px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.1s, color 0.1s;
+  font-family: inherit;
+}
+
+.title-btn:hover {
+  background-color: var(--bg-row-hover);
+  color: var(--text-primary);
 }
 
 .theme-toggle {
@@ -147,7 +322,6 @@ onMounted(() => {
   font-size: 16px;
   cursor: pointer;
   color: var(--text-muted);
-  -webkit-app-region: no-drag;
   padding: 4px 8px;
   border-radius: 4px;
   transition: background-color 0.1s, color 0.1s;
