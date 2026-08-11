@@ -6,6 +6,8 @@ export interface Line {
 export interface LineResult {
   result: number | null;
   text: string;
+  /** 计算错误信息（如前向引用、自引用、越界引用） */
+  error?: string;
 }
 
 export interface Worksheet {

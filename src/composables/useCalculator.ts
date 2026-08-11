@@ -1,4 +1,4 @@
-import { evaluate } from "mathjs";
+import { Parser } from "expr-eval";
 import type { LineResult } from "../types";
 import { rules } from "./rules/engine";
 import { numberExtractionRule } from "./rules/numberExtraction";
@@ -7,6 +7,9 @@ import { chinesePercentRule } from "./rules/chinesePercent";
 import { englishPercentRule } from "./rules/englishPercent";
 import { unitConversionRule } from "./rules/unitConversion";
 import { aggregateRule } from "./rules/aggregate";
+
+// 预编译表达式解析器（四则运算 + 括号 + 一元负号 + 取模）
+const parser = new Parser();
 
 // 注册语义规则（按优先级排序）
 rules.push(
@@ -23,7 +26,7 @@ rules.push(
  *
  * 多级管线：
  * 1. 空行 → null
- * 2. mathjs 表达式（四则运算、纯数字、括号）→ 直接返回
+ * 2. expr-eval 表达式（四则运算、纯数字、括号）→ 直接返回
  * 3. 语义规则引擎（中文折扣、英文百分比、数字提取求和）→ 依次尝试
  * 4. 全部失败 → null
  */
@@ -34,19 +37,25 @@ export function calculateLine(text: string): LineResult {
     return { result: null, text: "" };
   }
 
-  // 第1级：mathjs 表达式
+  // 预处理：中文大数单位 万/亿 → 乘法
+  // "1万" → "10000", "3.5亿" → "350000000", "2万5" → "25000"
+  const expanded = expandChineseMagnitude(trimmed);
+
+  // 第1级：表达式求值（四则运算 + 括号）
   try {
-    const value = evaluate(trimmed);
+    const value = parser.parse(expanded).evaluate();
     if (typeof value === "number" && !isNaN(value) && isFinite(value)) {
-      return { result: value, text: formatNumber(value) };
+      // -0 → 0
+      const normalized = value === 0 ? 0 : value;
+      return { result: normalized, text: formatNumber(normalized) };
     }
   } catch {
-    // mathjs 失败，继续走语义规则
+    // 表达式解析失败，继续走语义规则
   }
 
-  // 第2级：语义规则引擎
+  // 第2级：语义规则引擎（用 expanded 替换后的文本）
   for (const rule of rules) {
-    const result = rule.match(trimmed);
+    const result = rule.match(expanded);
     if (result !== null) {
       return result;
     }
@@ -56,11 +65,41 @@ export function calculateLine(text: string): LineResult {
 }
 
 /**
+ * 中文大数单位展开：
+ * - "万" = ×10000，"亿" = ×100000000
+ * - 支持整数和小数前缀：1万、3.5亿、0.5万
+ * - 支持尾数：2万5 = 25000、3亿5 = 350000000
+ * - 多个单位：1亿2千万 = 120000000
+ */
+function expandChineseMagnitude(text: string): string {
+  // 先处理 "亿"，再处理 "万"（从大到小）
+  let result = text;
+  // 数字 + 亿 + 可选尾数 → (数字 * 100000000 + 尾数)
+  result = result.replace(/(\d[\d,]*\.?\d*)\s*亿\s*(\d[\d,]*\.?\d*)?/g, (_, num, suffix) => {
+    const base = parseFloat(num.replace(/,/g, "")) * 1e8;
+    return suffix ? String(base + parseFloat(suffix.replace(/,/g, "")) * 1e7) : String(base);
+  });
+  result = result.replace(/(\d[\d,]*\.?\d*)\s*亿/g, (_, num) => String(parseFloat(num.replace(/,/g, "")) * 1e8));
+
+  // 数字 + 万 + 可选尾数 → (数字 * 10000 + 尾数)
+  result = result.replace(/(\d[\d,]*\.?\d*)\s*万\s*(\d[\d,]*\.?\d*)?/g, (_, num, suffix) => {
+    const base = parseFloat(num.replace(/,/g, "")) * 1e4;
+    return suffix ? String(base + parseFloat(suffix.replace(/,/g, "")) * 1e3) : String(base);
+  });
+  result = result.replace(/(\d[\d,]*\.?\d*)\s*万/g, (_, num) => String(parseFloat(num.replace(/,/g, "")) * 1e4));
+
+  return result;
+}
+
+/**
  * 格式化数字显示
  * - 整数直接显示，加千分位
  * - 小数最多保留 6 位，去掉末尾多余的 0
  */
 export function formatNumber(value: number): string {
+  if (value === 0) {
+    return "0";
+  }
   if (Number.isInteger(value)) {
     return value.toLocaleString("en-US");
   }

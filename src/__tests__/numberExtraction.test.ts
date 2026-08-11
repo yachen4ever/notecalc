@@ -25,4 +25,13 @@ describe("V2 - 数字提取求和规则 (numberExtraction)", () => {
     expect(numberExtractionRule.match("hello world")).toBeNull();
     expect(numberExtractionRule.match("")).toBeNull();
   });
+
+  it("含语义关键词时不兜底求和", () => {
+    expect(numberExtractionRule.match("比100少20%")).toBeNull();
+    expect(numberExtractionRule.match("比100多20")).toBeNull();
+    expect(numberExtractionRule.match("100和200的平均")).toBeNull();
+    expect(numberExtractionRule.match("2的3次方")).toBeNull();
+    expect(numberExtractionRule.match("16的平方根")).toBeNull();
+    expect(numberExtractionRule.match("100是总数的百分之几")).toBeNull();
+  });
 });

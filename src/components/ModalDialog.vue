@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from "vue";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 const props = defineProps<{
   visible: boolean;
@@ -54,6 +55,14 @@ function doConfirm() {
   }
   emit("close");
 }
+
+async function openLink(url: string) {
+  try {
+    await openUrl(url);
+  } catch {
+    // 静默失败，不影响弹窗
+  }
+}
 </script>
 
 <template>
@@ -93,8 +102,8 @@ function doConfirm() {
             <div class="about-version">v{{ version }}</div>
             <div class="about-divider"></div>
             <div class="about-row"><span class="about-label">开发者</span><span class="about-value">{{ author }}</span></div>
-            <div class="about-row"><span class="about-label">邮箱</span><a class="about-link" :href="'mailto:' + email">{{ email }}</a></div>
-            <div class="about-row"><span class="about-label">项目</span><a class="about-link" :href="repo" target="_blank">GitHub</a></div>
+            <div class="about-row"><span class="about-label">邮箱</span><a class="about-link" href="#" @click.prevent="openLink('mailto:' + (email ?? ''))">{{ email }}</a></div>
+            <div class="about-row"><span class="about-label">项目</span><a class="about-link" href="#" @click.prevent="openLink(repo ?? '')">GitHub</a></div>
             <div class="about-divider"></div>
             <div class="about-footer">记事本风格的跨平台计算器</div>
           </div>

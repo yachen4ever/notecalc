@@ -8,8 +8,8 @@ import { buildLineResults } from "./composables/useVariables";
 import { loadData, saveData } from "./composables/useStorage";
 import { exportJSON, exportCSV, exportMarkdown, importJSON } from "./composables/useImportExport";
 import type { Line, Worksheet, WorksheetData, LineResult } from "./types";
-import { save } from "@tauri-apps/plugin-dialog";
-import { writeTextFile } from "@tauri-apps/plugin-fs";
+import { save, open } from "@tauri-apps/plugin-dialog";
+import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 
 // ===== 工作表数据 =====
 let nextLineId = 1;
@@ -164,29 +164,23 @@ async function doExport() {
   await writeTextFile(filePath, content);
 }
 
-function doImport() {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = ".json";
-  input.onchange = () => {
-    const file = input.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const imported = importJSON(reader.result as string);
-      if (imported && imported.length > 0) {
-        sheets.value = imported;
-        activeSheetId.value = imported[0].id;
-      }
-    };
-    reader.readAsText(file);
-  };
-  input.click();
+async function doImport() {
+  const filePath = await open({
+    filters: [{ name: "JSON", extensions: ["json"] }],
+  });
+  if (!filePath || typeof filePath !== "string") return;
+
+  const content = await readTextFile(filePath);
+  const imported = importJSON(content);
+  if (imported && imported.length > 0) {
+    sheets.value = imported;
+    activeSheetId.value = imported[0].id;
+  }
 }
 
 // ===== 关于对话框 =====
 const aboutVisible = ref(false);
-const APP_VERSION = "0.5.0-alpha.1";
+const APP_VERSION = "0.6.0";
 
 // ===== 初始化 =====
 onMounted(async () => {

@@ -42,6 +42,13 @@ function onKeydown(e: KeyboardEvent) {
   } else if (e.key === "ArrowDown") {
     e.preventDefault();
     emit("move-down");
+  } else if (e.key === "Tab") {
+    e.preventDefault();
+    if (e.shiftKey) {
+      emit("move-up");
+    } else {
+      emit("move-down");
+    }
   }
 }
 
@@ -83,8 +90,8 @@ defineExpose({ focus });
     </div>
 
     <!-- 结果区 -->
-    <span class="line-result" :class="{ dim: lineResult.result === null }">
-      {{ lineResult.text || "—" }}
+    <span class="line-result" :class="{ dim: lineResult.result === null, error: lineResult.error }" :title="lineResult.error">
+      {{ lineResult.error ? "⚠" : (lineResult.text || "—") }}
     </span>
   </div>
 </template>
@@ -169,5 +176,10 @@ defineExpose({ focus });
 
 .line-result.dim {
   color: var(--text-dim);
+}
+
+.line-result.error {
+  color: #ef4444;
+  cursor: help;
 }
 </style>

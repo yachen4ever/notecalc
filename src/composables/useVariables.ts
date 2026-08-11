@@ -112,8 +112,23 @@ export function buildLineResults(lines: Line[]): LineComputeResult[] {
 
     const assignment = parseAssignment(text);
     if (assignment) {
+      // 检测变量名与行引用格式冲突（l1/line2 等）
+      if (/^(?:l|line)\d+$/i.test(assignment.name)) {
+        results[i] = {
+          result: null,
+          text: "",
+          deps: [],
+          assignment: null,
+          error: `变量名 "${assignment.name}" 与行引用格式冲突，请换一个名字`,
+        };
+        continue;
+      }
       // 赋值语句：右侧可能也引用了之前的变量/行，需要先替换
-      const { substituted, deps } = substitute(assignment.rhs, lineValues, namedVars, i);
+      const { substituted, deps, error } = substitute(assignment.rhs, lineValues, namedVars, i);
+      if (error) {
+        results[i] = { result: null, text: "", deps, assignment: null, error };
+        continue;
+      }
       const { result, text: resultText } = calculateLine(substituted);
       results[i] = {
         result,
@@ -130,7 +145,11 @@ export function buildLineResults(lines: Line[]): LineComputeResult[] {
     }
 
     // 非赋值行：先替换变量引用，再计算
-    const { substituted, deps } = substitute(text, lineValues, namedVars, i);
+    const { substituted, deps, error } = substitute(text, lineValues, namedVars, i);
+    if (error) {
+      results[i] = { result: null, text: "", deps, assignment: null, error };
+      continue;
+    }
     const { result, text: resultText } = calculateLine(substituted);
     results[i] = { result, text: resultText, deps, assignment: null };
     if (result !== null) {
@@ -141,13 +160,15 @@ export function buildLineResults(lines: Line[]): LineComputeResult[] {
   return results;
 }
 
-/** 变量替换：把行引用和命名变量替换为具体数值 */
+/** 变量替换：把行引用和命名变量替换为具体数值
+ *  返回 { substituted, deps, error } —— error 非 null 时说明引用有问题
+ */
 function substitute(
   text: string,
   lineValues: (number | null)[],
   namedVars: Map<string, number>,
   currentIndex: number,
-): { substituted: string; deps: number[] } {
+): { substituted: string; deps: number[]; error: string | null } {
   let result = text;
   const deps: number[] = [];
 
@@ -155,18 +176,17 @@ function substitute(
   const refs = findLineRefs(text);
   for (const ref of refs) {
     if (ref.lineIndex === currentIndex) {
-      // 自引用
-      result = result.replace(ref.marker, "0");
-      deps.push(ref.lineIndex);
-      continue;
+      return { substituted: text, deps, error: "自引用" };
+    }
+    if (ref.lineIndex < 0 || ref.lineIndex >= lineValues.length) {
+      return { substituted: text, deps, error: `引用了不存在的行 l${ref.lineIndex + 1}` };
     }
     const val = lineValues[ref.lineIndex];
-    if (val !== undefined && val !== null) {
-      result = result.replace(ref.marker, String(val));
-    } else {
-      // 引用的行还没有结果（空行或无效），替换为 0
-      result = result.replace(ref.marker, "0");
+    if (val === null) {
+      // 引用的行还没有结果（前向引用或空行/无效行）
+      return { substituted: text, deps, error: `前向引用 l${ref.lineIndex + 1}（该行无有效结果）` };
     }
+    result = result.replace(ref.marker, String(val));
     deps.push(ref.lineIndex);
   }
 
@@ -181,7 +201,7 @@ function substitute(
     }
   }
 
-  return { substituted: result, deps };
+  return { substituted: result, deps, error: null };
 }
 
 function escapeRegExp(s: string): string {
@@ -192,5 +212,5 @@ function escapeRegExp(s: string): string {
  * 从 buildLineResults 提取纯 LineResult 数组（用于兼容旧接口）
  */
 export function toLineResults(computeResults: LineComputeResult[]): LineResult[] {
-  return computeResults.map((r) => ({ result: r.result, text: r.text }));
+  return computeResults.map((r) => ({ result: r.result, text: r.text, error: r.error }));
 }

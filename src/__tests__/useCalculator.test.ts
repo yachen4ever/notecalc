@@ -59,10 +59,46 @@ describe("V1 - calculateLine 基础计算", () => {
   });
 
   it("除零和非法表达式", () => {
-    // mathjs 把 "+ +" 解析为一元正号：1 + (+2) = 3
+    // expr-eval 把 "+ +" 解析为一元正号：1 + (+2) = 3
     expect(calculateLine("1 + + 2").result).toBe(3);
-    // 除零 → mathjs 返回 Infinity → 被 isFinite 过滤 → numberExtraction 提取数字 1
+    // 除零 → expr-eval 返回 Infinity → 被 isFinite 过滤 → numberExtraction 提取数字 1
     expect(calculateLine("1 / 0").result).toBe(1);
+  });
+});
+
+// ============ 中文大数单位 万/亿 ============
+
+describe("中文大数单位", () => {
+  it("基本万", () => {
+    expect(calculateLine("1万").result).toBe(10000);
+    expect(calculateLine("3万").result).toBe(30000);
+    expect(calculateLine("3.5万").result).toBe(35000);
+    expect(calculateLine("0.5万").result).toBe(5000);
+  });
+
+  it("基本亿", () => {
+    expect(calculateLine("1亿").result).toBe(100000000);
+    expect(calculateLine("2.5亿").result).toBe(250000000);
+  });
+
+  it("万 + 尾数", () => {
+    expect(calculateLine("2万5").result).toBe(25000);
+    expect(calculateLine("1万3").result).toBe(13000);
+  });
+
+  it("亿 + 尾数", () => {
+    expect(calculateLine("1亿2").result).toBe(120000000);
+  });
+
+  it("万/亿 参与运算", () => {
+    expect(calculateLine("1万 + 2万").result).toBe(30000);
+    expect(calculateLine("1亿 + 2亿").result).toBe(300000000);
+    expect(calculateLine("1万 * 2").result).toBe(20000);
+  });
+
+  it("-0 显示为 0", () => {
+    expect(calculateLine("0 * -1").text).toBe("0");
+    expect(calculateLine("-0.0000001").text).toBe("0");
   });
 });
 

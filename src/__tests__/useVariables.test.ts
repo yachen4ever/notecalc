@@ -158,16 +158,18 @@ describe("V4 - buildLineResults 工作表计算", () => {
       expect(results[3].result).toBe(60);
     });
 
-    it("引用空行替换为 0", () => {
+    it("引用空行报错（不再静默替换为 0）", () => {
       const lines = makeLines(["", "l1 + 100"]);
       const results = buildLineResults(lines);
-      expect(results[1].result).toBe(100);
+      expect(results[1].error).toContain("前向引用");
+      expect(results[1].result).toBeNull();
     });
 
-    it("自引用替换为 0", () => {
+    it("自引用报错（不再静默替换为 0）", () => {
       const lines = makeLines(["l1 + 100"]);
       const results = buildLineResults(lines);
-      expect(results[0].result).toBe(100);
+      expect(results[0].error).toContain("自引用");
+      expect(results[0].result).toBeNull();
     });
 
     it("行引用参与复杂运算", () => {
@@ -304,5 +306,72 @@ describe("V4 - toLineResults 兼容接口", () => {
     expect(lineResults).toHaveLength(2);
     expect(lineResults[0].result).toBe(100);
     expect(lineResults[1].result).toBeNull();
+  });
+});
+
+// ============ 引用错误检测 ============
+
+describe("V5 - 引用错误检测", () => {
+  function makeLines(texts: string[]): Line[] {
+    return texts.map((t, i) => ({ id: i + 1, text: t }));
+  }
+
+  it("前向引用报错", () => {
+    const lines = makeLines(["l2 + 100", "200"]);
+    const results = buildLineResults(lines);
+    expect(results[0].error).toBeTruthy();
+    expect(results[0].error).toContain("前向引用");
+    expect(results[0].result).toBeNull();
+  });
+
+  it("自引用报错", () => {
+    const lines = makeLines(["l1 + 100"]);
+    const results = buildLineResults(lines);
+    expect(results[0].error).toContain("自引用");
+    expect(results[0].result).toBeNull();
+  });
+
+  it("越界引用报错", () => {
+    const lines = makeLines(["l999 + 100"]);
+    const results = buildLineResults(lines);
+    expect(results[0].error).toContain("不存在");
+    expect(results[0].result).toBeNull();
+  });
+
+  it("l0 越界报错（0-based 索引 -1）", () => {
+    const lines = makeLines(["l0 + 100"]);
+    const results = buildLineResults(lines);
+    expect(results[0].error).toContain("不存在");
+  });
+
+  it("正常后向引用不报错", () => {
+    const lines = makeLines(["100", "l1 * 2"]);
+    const results = buildLineResults(lines);
+    expect(results[1].error).toBeUndefined();
+    expect(results[1].result).toBe(200);
+  });
+
+  it("赋值语句中的前向引用报错", () => {
+    const lines = makeLines(["总价 = l2 * 2", "100"]);
+    const results = buildLineResults(lines);
+    expect(results[0].error).toContain("前向引用");
+  });
+
+  it("toLineResults 传递 error 字段", () => {
+    const lines = makeLines(["l2 + 100", "200"]);
+    const results = toLineResults(buildLineResults(lines));
+    expect(results[0].error).toBeTruthy();
+  });
+
+  it("变量名与行引用格式冲突报错", () => {
+    const lines = makeLines(["l1 = 42", "l1 + 100"]);
+    const results = buildLineResults(lines);
+    expect(results[0].error).toContain("冲突");
+  });
+
+  it("变量名 line1 也冲突", () => {
+    const lines = makeLines(["line1 = 42"]);
+    const results = buildLineResults(lines);
+    expect(results[0].error).toContain("冲突");
   });
 });
