@@ -8,6 +8,8 @@ import { buildLineResults } from "./composables/useVariables";
 import { loadData, saveData } from "./composables/useStorage";
 import { exportJSON, exportCSV, exportMarkdown, importJSON } from "./composables/useImportExport";
 import type { Line, Worksheet, WorksheetData, LineResult } from "./types";
+import { save } from "@tauri-apps/plugin-dialog";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
 
 // ===== 工作表数据 =====
 let nextLineId = 1;
@@ -137,29 +139,29 @@ function scheduleSave() {
 watch([sheets, activeSheetId], scheduleSave, { deep: true });
 
 // ===== 导入导出 =====
-function doExportJSON() {
-  const json = exportJSON(sheets.value);
-  downloadFile(`${activeSheet.value.name}.json`, json, "application/json");
-}
+async function doExport() {
+  const baseName = activeSheet.value.name;
+  const filePath = await save({
+    defaultPath: baseName,
+    filters: [
+      { name: "JSON", extensions: ["json"] },
+      { name: "CSV", extensions: ["csv"] },
+      { name: "Markdown", extensions: ["md"] },
+    ],
+  });
+  if (!filePath) return; // 用户取消
 
-function doExportCSV() {
-  const csv = exportCSV(activeSheet.value);
-  downloadFile(`${activeSheet.value.name}.csv`, csv, "text/csv");
-}
+  const ext = filePath.split(".").pop()?.toLowerCase();
+  let content = "";
+  if (ext === "csv") {
+    content = exportCSV(activeSheet.value);
+  } else if (ext === "md") {
+    content = exportMarkdown(activeSheet.value);
+  } else {
+    content = exportJSON(sheets.value);
+  }
 
-function doExportMarkdown() {
-  const md = exportMarkdown(activeSheet.value);
-  downloadFile(`${activeSheet.value.name}.md`, md, "text/markdown");
-}
-
-function downloadFile(filename: string, content: string, mime: string) {
-  const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+  await writeTextFile(filePath, content);
 }
 
 function doImport() {
@@ -184,7 +186,7 @@ function doImport() {
 
 // ===== 关于对话框 =====
 const aboutVisible = ref(false);
-const APP_VERSION = "0.4.0-alpha.1";
+const APP_VERSION = "0.5.0-alpha.1";
 
 // ===== 初始化 =====
 onMounted(async () => {
@@ -205,6 +207,9 @@ onMounted(async () => {
   }
   await nextTick();
   lineRefs.value[0]?.focus();
+
+  // 禁用 WebView 原生右键菜单（去掉浏览器「另存为/打印/更多工具」等无用项）
+  document.addEventListener("contextmenu", (e) => e.preventDefault());
 });
 </script>
 
@@ -228,9 +233,7 @@ onMounted(async () => {
           <span class="sheet-name-badge">{{ activeSheet?.name }}</span>
         </div>
         <div class="title-right">
-          <button class="title-btn" @click="doExportJSON" title="导出 JSON">JSON</button>
-          <button class="title-btn" @click="doExportCSV" title="导出 CSV">CSV</button>
-          <button class="title-btn" @click="doExportMarkdown" title="导出 Markdown">MD</button>
+          <button class="title-btn" @click="doExport" title="导出（JSON/CSV/MD）">导出</button>
           <button class="title-btn" @click="doImport" title="导入 JSON">导入</button>
           <button class="theme-toggle" @click="toggleTheme" title="切换主题">
             {{ theme === "dark" ? "\u2600" : "\u263d" }}

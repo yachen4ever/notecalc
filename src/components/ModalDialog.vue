@@ -88,7 +88,7 @@ function doConfirm() {
         <!-- About mode -->
         <template v-else-if="mode === 'about'">
           <div class="modal-about">
-            <div class="about-icon">📝🔢</div>
+            <img class="about-icon" src="/app-icon.png" alt="NoteCalc" />
             <div class="about-name">NoteCalc</div>
             <div class="about-version">v{{ version }}</div>
             <div class="about-divider"></div>
@@ -225,8 +225,11 @@ function doConfirm() {
 }
 
 .about-icon {
-  font-size: 36px;
-  margin-bottom: 8px;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 8px;
+  border-radius: 12px;
+  display: block;
 }
 
 .about-name {
