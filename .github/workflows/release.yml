@@ -19,16 +19,35 @@ jobs:
       release-id: ${{ steps.create.outputs.id }}
     steps:
       - uses: actions/checkout@v4
+      - name: Extract changelog for this version
+        id: changelog
+        shell: bash
+        run: |
+          # 从 CHANGELOG.md 提取当前 tag 对应版本的更新内容
+          # 格式：## v0.6.0 (2026-08-11) 到下一个 ## 之间
+          TAG="${GITHUB_REF_NAME}"
+          # 提取该 tag 段落（从 "## $TAG" 到下一个 "## " 之间的内容）
+          BODY=$(awk -v tag="## ${TAG}" '
+            $0 ~ "^"tag { found=1; next }
+            /^## / && found { exit }
+            found { print }
+          ' CHANGELOG.md | sed '/^---$/d' | sed 's/^[[:space:]]*$//' | sed -e :a -e '/./,$!d;/^\n*$/{$d;N;}' | sed -e 's/^\n//')
+          if [ -z "$BODY" ]; then
+            BODY="更新内容见 CHANGELOG.md。"
+          fi
+          # 输出到 GITHUB_ENV 供后续 step 使用
+          {
+            echo "BODY<<CHANGELOG_EOF"
+            echo "$BODY"
+            echo "CHANGELOG_EOF"
+          } >> "$GITHUB_ENV"
       - name: Create release
         id: create
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ github.ref_name }}
           prerelease: true
-          body: |
-            ## ${{ github.ref_name }}
-
-            更新日志见 CHANGELOG.md。
+          body: ${{ env.BODY }}
           files: CHANGELOG.md
 
   # 第二步：跨平台并行构建
