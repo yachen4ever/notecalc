@@ -180,7 +180,7 @@ async function doImport() {
 
 // ===== 关于对话框 =====
 const aboutVisible = ref(false);
-const APP_VERSION = "0.7.0";
+const APP_VERSION = "0.7.1";
 
 // ===== 初始化 =====
 onMounted(async () => {

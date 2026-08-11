@@ -112,11 +112,13 @@ describe("formatNumber", () => {
     expect(formatNumber(0)).toBe("0");
   });
 
-  it("小数最多 6 位，去尾零", () => {
+  it("小数默认保留 2 位，去尾零", () => {
     expect(formatNumber(3.14)).toBe("3.14");
     expect(formatNumber(0.5)).toBe("0.5");
-    expect(formatNumber(10 / 3)).toBe("3.333333");
+    expect(formatNumber(10 / 3)).toBe("3.33");
     expect(formatNumber(2.5)).toBe("2.5");
+    expect(formatNumber(1 / 3)).toBe("0.33");
+    expect(formatNumber(0.1)).toBe("0.1");
   });
 
   it("负数", () => {

@@ -3,13 +3,31 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '0e59795d-9dfd-451c-abb3-f925e65d9203'
-  PropagateID: '0e59795d-9dfd-451c-abb3-f925e65d9203'
-  ReservedCode1: 'd1fd518f-9680-4dac-8514-5c9de5f7fd63'
-  ReservedCode2: 'd1fd518f-9680-4dac-8514-5c9de5f7fd63'
+  ProduceID: '8f265c8d-4b66-4d7a-b300-6a7842d125b9'
+  PropagateID: '8f265c8d-4b66-4d7a-b300-6a7842d125b9'
+  ReservedCode1: 'af9611e0-a7f0-4eca-a698-a76668a7da85'
+  ReservedCode2: 'af9611e0-a7f0-4eca-a698-a76668a7da85'
 ---
 
 # 更新日志
+
+## v0.7.1 (2026-08-12)
+
+### 体验改进
+
+- **默认保留 2 位小数**：`formatNumber` 从 6 位改为 2 位，自动去尾零（3.14、3.1、3、10/3→3.33）
+- **单单位输入也识别**：`1小时`、`5km`、`100kg` 等单单位输入现在也能触发单位识别并支持右侧切换（复合单位规则阈值从 <2 改为 <1）
+- **README 截图修复**：改用 jsDelivr CDN 加速，解决国内 `raw.githubusercontent.com` 被墙导致图片加载不出来的问题
+- **README 路线图版本号统一**：V1-V6 改为 v0.1-v0.7，与实际 tag 一致
+- **README 增加链接**：标题下方添加 CHANGELOG.md 和英文版 README 链接
+- **新增英文版文档**：README_EN.md + CHANGELOG_EN.md
+
+#### 测试
+
+- 单元测试 184 个全部通过（10 个测试文件）
+- 新增：单单位触发测试 3 个（1小时/5km/100kg）
+
+---
 
 ## v0.7.0 (2026-08-11)
 

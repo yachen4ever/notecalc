@@ -53,7 +53,7 @@ describe("V6 - 复合单位归一化 (compoundUnit)", () => {
     // 基准是米：1000 + 500 + 0.2 = 1500.2m
     expect(result!.result).toBeCloseTo(1500.2, 2);
     expect(result!.text).toContain("千米");
-    expect(result!.text).toContain("1.5002");
+    expect(result!.text).toContain("1.5");
   });
 
   it("5英尺 6英寸 → 复合英制长度", () => {
@@ -81,11 +81,35 @@ describe("V6 - 复合单位归一化 (compoundUnit)", () => {
     expect(r1!.result).toBe(r2!.result);
   });
 
-  // ===== 边界 case =====
-  it("单个数字+单位不触发复合规则（返回 null）", () => {
-    expect(compoundUnitRule.match("5km")).toBeNull();
-    expect(compoundUnitRule.match("100kg")).toBeNull();
+  // ===== 单单位也触发（可切换） =====
+  it("1小时 → 单单位也触发，默认展示小时，可切换", () => {
+    const result = compoundUnitRule.match("1小时");
+    expect(result).not.toBeNull();
+    expect(result!.result).toBe(3600); // 基准秒
+    expect(result!.text).toContain("小时");
+    expect(result!.text).toContain("1");
+    expect(result!.unitInfo).toBeDefined();
+    expect(result!.unitInfo!.category).toBe("time");
+    expect(result!.unitInfo!.units.length).toBeGreaterThanOrEqual(2);
   });
+
+  it("5km → 单单位默认展示千米", () => {
+    const result = compoundUnitRule.match("5km");
+    expect(result).not.toBeNull();
+    expect(result!.result).toBe(5000); // 基准米
+    expect(result!.text).toContain("千米");
+    expect(result!.text).toContain("5");
+  });
+
+  it("100kg → 单单位默认展示千克", () => {
+    const result = compoundUnitRule.match("100kg");
+    expect(result).not.toBeNull();
+    expect(result!.result).toBe(100000); // 基准克
+    expect(result!.text).toContain("千克");
+    expect(result!.text).toContain("100");
+  });
+
+  // ===== 边界 case =====
 
   it("包含转换关键词时不触发（交给 unitConversionRule）", () => {
     expect(compoundUnitRule.match("5km to mi")).toBeNull();

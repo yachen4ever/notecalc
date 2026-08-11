@@ -10,14 +10,15 @@ import type { LineResult, UnitInfo, UnitOption } from "../../types";
  * 支持的写法：
  *   "1天20小时48分钟"     → 1.87 天（可切换 小时/分钟/秒）
  *   "1kg + 200g"         → 1.2 kg（可切换 g/mg/吨）
- *   "1km 500m 20cm"      → 1.5002 km（可切换 m/cm/mm）
+ *   "1km 500m 20cm"      → 1.5 km（可切换 m/cm/mm）
  *   "2小时30分钟"         → 2.5 小时（可切换 分钟/秒）
+ *   "1小时"              → 1 小时（可切换 分钟/秒/天）  ← 单单位也触发
  *
  * 判断逻辑：
  *   - 输入中没有转换关键词（to/转/等于多少）→ 否则交给 unitConversionRule 处理
- *   - 文本中包含 2 个或以上 "数字+同类单位" 的组合 → 复合单位
+ *   - 文本中包含 1 个或以上 "数字+同类单位" 的组合 → 复合单位
  *   - 所有单位必须属于同一类别
- *   - 1 个"数字+单位"不触发（交给 numberExtractionRule 或其他规则）
+ *   - 温度不支持（30摄氏度 没有切换意义，交给 unitConversionRule）
  */
 export const compoundUnitRule: SemanticRule = {
   name: "compound-unit",
@@ -28,14 +29,14 @@ export const compoundUnitRule: SemanticRule = {
 
     // 提取所有 "数字+单位" 组合
     const matches = extractUnitPairs(text);
-    if (matches.length < 2) return null;
+    if (matches.length < 1) return null;
 
     // 检查所有单位是否属于同一类别
     const categories = new Set(matches.map((m) => m.unit.category));
     if (categories.size !== 1) return null;
 
     const category = matches[0].unit.category;
-    // 温度不支持复合（30摄氏度20华氏度 没有意义）
+    // 温度不支持复合（30摄氏度 没有切换意义）
     if (category === "temperature") return null;
 
     // 归一化为基准值

@@ -96,7 +96,7 @@ function expandChineseMagnitude(text: string): string {
 /**
  * 格式化数字显示
  * - 整数直接显示，加千分位
- * - 小数最多保留 6 位，去掉末尾多余的 0
+ * - 小数默认保留 2 位，去掉末尾多余的 0
  */
 export function formatNumber(value: number): string {
   if (value === 0) {
@@ -106,8 +106,8 @@ export function formatNumber(value: number): string {
     return value.toLocaleString("en-US");
   }
 
-  const rounded = Math.round(value * 1e6) / 1e6;
-  const str = rounded.toFixed(6).replace(/\.?0+$/, "");
+  const rounded = Math.round(value * 100) / 100;
+  const str = rounded.toFixed(2).replace(/\.?0+$/, "");
   const parts = str.split(".");
   parts[0] = Number(parts[0]).toLocaleString("en-US");
   return parts.join(".");
