@@ -116,13 +116,12 @@ for (const u of units) {
 }
 
 /**
- * 解析单位文本中的数字 + 单位
- * 返回所有匹配的 { number, unit } 对
+ * 从文本中解析源单位对（数字 + 单位）
+ * 返回第一个匹配的 { value, unit }
  */
-function parseUnitPairs(text: string): { value: number; unit: UnitDef }[] {
-  const pairs: { value: number; unit: UnitDef }[] = [];
+function parseSourceUnit(text: string): { value: number; unit: UnitDef } | null {
   // 匹配：数字 + 可选空格 + 单位
-  const regex = /(\d[\d,]*\.?\d*)\s*([a-z°²²0-9\u4e00-\u9fff]+)/gi;
+  const regex = /(\d[\d,]*\.?\d*)\s*([a-z°²0-9\u4e00-\u9fff]+)/gi;
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(text)) !== null) {
@@ -130,11 +129,32 @@ function parseUnitPairs(text: string): { value: number; unit: UnitDef }[] {
     const unitName = match[2].toLowerCase();
     const unit = unitMap.get(unitName);
     if (value !== null && unit) {
-      pairs.push({ value, unit });
+      return { value, unit };
     }
   }
 
-  return pairs;
+  return null;
+}
+
+/**
+ * 从文本中解析目标单位（不要求前面有数字）
+ * 遍历单位表，按名称长度降序匹配（优先匹配更长的单位名，如 "千米" 优先于 "米"）
+ */
+function parseTargetUnit(text: string): UnitDef | null {
+  // 按名称长度降序排列，避免短名称部分匹配
+  const sortedNames = [...unitMap.entries()].sort((a, b) => b[0].length - a[0].length);
+  const lower = text.toLowerCase();
+  for (const [name, unit] of sortedNames) {
+    // 用词边界检查，避免 "米" 匹配到 "千米" 的尾部
+    const idx = lower.indexOf(name);
+    if (idx >= 0) {
+      // 检查前面一个字符不是字母/数字/中文（避免部分匹配）
+      const prevChar = lower[idx - 1];
+      if (prevChar && /[\w\u4e00-\u9fa5]/.test(prevChar)) continue;
+      return unit;
+    }
+  }
+  return null;
 }
 
 /**
@@ -177,14 +197,17 @@ export const unitConversionRule: SemanticRule = {
     const keyword = findConversionKeyword(text);
     if (!keyword) return null;
 
-    const pairs = parseUnitPairs(text);
-    if (pairs.length < 2) return null;
+    const source = parseSourceUnit(text);
+    if (!source) return null;
+
+    // 目标单位：从转换关键词之后查找
+    const kwIdx = text.toLowerCase().indexOf(keyword);
+    const afterKeyword = text.slice(kwIdx + keyword.length);
+    const target = parseTargetUnit(afterKeyword);
+    if (!target) return null;
 
     // 源单位和目标单位必须同类别
-    const source = pairs[0];
-    const target = pairs[1];
-
-    if (source.unit.category !== target.unit.category) return null;
+    if (source.unit.category !== target.category) return null;
 
     // 转换
     let baseValue: number;
@@ -195,10 +218,10 @@ export const unitConversionRule: SemanticRule = {
     }
 
     let result: number;
-    if (target.unit.fromBase) {
-      result = target.unit.fromBase(baseValue);
+    if (target.fromBase) {
+      result = target.fromBase(baseValue);
     } else {
-      result = baseValue / target.unit.factor;
+      result = baseValue / target.factor;
     }
 
     return { result, text: formatNumber(result) };

@@ -13,17 +13,29 @@ import { calculateLine } from "./useCalculator";
  * 然后走原有的多级管线计算。
  */
 
-/** 从文本中提取命名变量赋值（如 "单价 = 100" → { name: "单价", value: 100 }） */
-export function extractAssignment(text: string): { name: string; value: number } | null {
+/**
+ * 从文本中检测赋值语法（不计算值）
+ * 如 "单价 = 100" → { name: "单价", rhs: "100" }
+ * 如 "总价 = 单价 * 数量" → { name: "总价", rhs: "单价 * 数量" }
+ */
+export function parseAssignment(text: string): { name: string; rhs: string } | null {
   // \w 不匹配中文，需显式加 \u4e00-\u9fa5
   const m = text.match(/^([\u4e00-\u9fa5a-zA-Z_][\w\u4e00-\u9fa5]*)\s*=\s*(.+)$/);
   if (!m) return null;
+  return { name: m[1].trim(), rhs: m[2].trim() };
+}
 
-  // 等号右侧可能是纯数字，也可能是表达式——交给 calculateLine 判断
-  const { result } = calculateLine(m[2].trim());
+/** 从文本中提取命名变量赋值（如 "单价 = 100" → { name: "单价", value: 100 }）
+ *  注意：右侧如果引用了未定义的变量，会返回 null。赋值右侧引用变量的场景由 buildLineResults 处理。
+ */
+export function extractAssignment(text: string): { name: string; value: number } | null {
+  const parsed = parseAssignment(text);
+  if (!parsed) return null;
+
+  const { result } = calculateLine(parsed.rhs);
   if (result === null) return null;
 
-  return { name: m[1].trim(), value: result };
+  return { name: parsed.name, value: result };
 }
 
 /** 检测行引用标记 l1 / line2 等，返回 { marker, lineIndex } */
@@ -98,16 +110,14 @@ export function buildLineResults(lines: Line[]): LineComputeResult[] {
       continue;
     }
 
-    const assignment = extractAssignment(text);
+    const assignment = parseAssignment(text);
     if (assignment) {
       // 赋值语句：右侧可能也引用了之前的变量/行，需要先替换
-      const eqIdx = text.indexOf("=");
-      const rhs = text.slice(eqIdx + 1).trim();
-      const { substituted, deps } = substitute(rhs, lineValues, namedVars, i);
+      const { substituted, deps } = substitute(assignment.rhs, lineValues, namedVars, i);
       const { result, text: resultText } = calculateLine(substituted);
       results[i] = {
         result,
-        text: result ? `${assignment.name} = ${resultText}` : "",
+        text: result !== null ? `${assignment.name} = ${resultText}` : "",
         deps,
         assignment: result !== null ? { name: assignment.name, value: result } : null,
       };
