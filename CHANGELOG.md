@@ -3,13 +3,45 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'f1f8075d-aa68-4691-92cb-c0897192848e'
-  PropagateID: 'f1f8075d-aa68-4691-92cb-c0897192848e'
-  ReservedCode1: '633b2f6e-594a-41f9-a1bf-c5558812af2a'
-  ReservedCode2: '633b2f6e-594a-41f9-a1bf-c5558812af2a'
+  ProduceID: '7a9896a8-4f58-4258-98e7-f4fcf68bc286'
+  PropagateID: '7a9896a8-4f58-4258-98e7-f4fcf68bc286'
+  ReservedCode1: '81fbaafa-4542-4531-9f4b-bab366a7a853'
+  ReservedCode2: '81fbaafa-4542-4531-9f4b-bab366a7a853'
 ---
 
 # 更新日志
+
+## v0.6.0 (2026-08-11)
+
+### V5 性能优化 + 健壮性增强 + 体验改进
+
+#### 性能优化
+
+- **替换 mathjs 为 expr-eval**：mathjs 占 bundle 93%（757KB），实际仅用 `evaluate()` 做四则运算
+  - 换成 expr-eval（6KB）后，bundle 从 757KB 降到 116KB（gzip 43KB），体积减少 85%
+  - 架构图中 `mathjs 表达式` 更新为 `expr-eval 表达式`
+
+#### 健壮性增强
+
+- **修复 numberExtractionRule 兜底误触发**：含中文语义关键词（比/少/多/平均/次方等）的文本不再被盲目提取数字求和，避免大量静默错误
+- **前向引用 / 自引用 / 越界引用检测**：原代码静默替换为 0，现改为报错（`error` 字段，UI 显示 ⚠ 红色警告 + hover 提示具体原因）
+- **中文大数单位 万/亿 支持**：`1万` → 10000、`3.5亿` → 350000000、`2万5` → 25000（`expandChineseMagnitude` 预处理）
+- **变量名冲突检测**：用户定义 `l1 = 42` 会与行引用系统冲突，赋值时检测并报错
+- **formatNumber(-0) 修复**：`value === 0` 时直接返回 `"0"`，避免显示 `-0`
+
+#### 体验改进
+
+- **导入功能改用 Tauri dialog**：`open()` + `readTextFile()`，替代不支持的 `a.download` + Blob URL
+- **关于对话框链接**：`@tauri-apps/plugin-opener` 的 `openUrl()` 替代无效的 `target="_blank"`
+- **Tab 键在行间移动焦点**：Tab → 下移行，Shift+Tab → 上移行（原 Tab 跳出编辑区）
+- **错误行视觉提示**：⚠ 图标 + 红色高亮 + title 属性 hover 显示错误原因
+
+#### 测试
+
+- 单元测试 166 个全部通过（9 个测试文件）
+- 新增测试：numberExtraction 语义关键词排除（1）、引用错误检测（7）、中文大数单位（6）、变量名冲突（2）
+
+---
 
 ## v0.5.0-alpha.1 (2026-08-11)
 
@@ -45,38 +77,6 @@ AIGC:
 - 重构：`buildLineResults` 统一计算整个工作表，支持变量上下文传递
 - 重构：`LineRow` 接受 `result` prop，不再独立计算（保证变量引用一致性）
 - 重构：导出功能（CSV/Markdown）使用 `buildLineResults`，正确处理变量引用行
-
----
-
-## v0.6.0 (2026-08-11)
-
-### V5 性能优化 + 健壮性增强 + 体验改进
-
-#### 性能优化
-
-- **替换 mathjs 为 expr-eval**：mathjs 占 bundle 93%（757KB），实际仅用 `evaluate()` 做四则运算
-  - 换成 expr-eval（6KB）后，bundle 从 757KB 降到 116KB（gzip 43KB），体积减少 85%
-  - 架构图中 `mathjs 表达式` 更新为 `expr-eval 表达式`
-
-#### 健壮性增强
-
-- **修复 numberExtractionRule 兜底误触发**：含中文语义关键词（比/少/多/平均/次方等）的文本不再被盲目提取数字求和，避免大量静默错误
-- **前向引用 / 自引用 / 越界引用检测**：原代码静默替换为 0，现改为报错（`error` 字段，UI 显示 ⚠ 红色警告 + hover 提示具体原因）
-- **中文大数单位 万/亿 支持**：`1万` → 10000、`3.5亿` → 350000000、`2万5` → 25000（`expandChineseMagnitude` 预处理）
-- **变量名冲突检测**：用户定义 `l1 = 42` 会与行引用系统冲突，赋值时检测并报错
-- **formatNumber(-0) 修复**：`value === 0` 时直接返回 `"0"`，避免显示 `-0`
-
-#### 体验改进
-
-- **导入功能改用 Tauri dialog**：`open()` + `readTextFile()`，替代不支持的 `a.download` + Blob URL
-- **关于对话框链接**：`@tauri-apps/plugin-opener` 的 `openUrl()` 替代无效的 `target="_blank"`
-- **Tab 键在行间移动焦点**：Tab → 下移行，Shift+Tab → 上移行（原 Tab 跳出编辑区）
-- **错误行视觉提示**：⚠ 图标 + 红色高亮 + title 属性 hover 显示错误原因
-
-#### 测试
-
-- 单元测试 166 个全部通过（9 个测试文件）
-- 新增测试：numberExtraction 语义关键词排除（1）、引用错误检测（7）、中文大数单位（6）、变量名冲突（2）
 
 ---
 
@@ -142,7 +142,7 @@ AIGC:
 ### 规则引擎架构
 
 ```
-输入文本 → mathjs 表达式（四则运算+括号）
+输入文本 → expr-eval 表达式（四则运算+括号）
                 ↓ 失败
            中文折扣规则（打折/半价/满减/涨降）
                 ↓ 不匹配
