@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'e31a0e64-f9f9-4798-84c7-1dea101f171c'
-  PropagateID: 'e31a0e64-f9f9-4798-84c7-1dea101f171c'
-  ReservedCode1: '77e51683-69c1-4176-85e6-1e414593ffd7'
-  ReservedCode2: '77e51683-69c1-4176-85e6-1e414593ffd7'
+  ProduceID: 'dc3fda6d-7882-4435-b81f-f47e531e22c4'
+  PropagateID: 'dc3fda6d-7882-4435-b81f-f47e531e22c4'
+  ReservedCode1: 'b54eca30-518b-479d-83a1-38beaa89f7f0'
+  ReservedCode2: 'b54eca30-518b-479d-83a1-38beaa89f7f0'
 ---
 
 # notecalc
@@ -97,6 +97,7 @@ Get prebuilt binaries from [Releases](https://github.com/yachen4ever/notecalc/re
 - **v0.5** ✅ UI polish: custom modal dialogs, about dialog, app icon, export refactor
 - **v0.6** ✅ expr-eval replaces mathjs (bundle -85%), reference error detection, Chinese magnitude units, Tab navigation
 - **v0.7** ✅ Compound unit recognition (1天20小时48分钟→1.87 days), unit switcher UI, single-unit switching
+- **v0.8** ✅ Undo/Redo (Ctrl+Z / Ctrl+Shift+Z), text input debounce, focus restoration
 
 ## License
 

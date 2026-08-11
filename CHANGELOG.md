@@ -3,13 +3,23 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '8f265c8d-4b66-4d7a-b300-6a7842d125b9'
-  PropagateID: '8f265c8d-4b66-4d7a-b300-6a7842d125b9'
-  ReservedCode1: 'af9611e0-a7f0-4eca-a698-a76668a7da85'
-  ReservedCode2: 'af9611e0-a7f0-4eca-a698-a76668a7da85'
+  ProduceID: '1b04fa74-4d54-4ae8-a445-6bc63481317d'
+  PropagateID: '1b04fa74-4d54-4ae8-a445-6bc63481317d'
+  ReservedCode1: 'd7706f5d-13b9-4a7f-be08-dac9011bfa8c'
+  ReservedCode2: 'd7706f5d-13b9-4a7f-be08-dac9011bfa8c'
 ---
 
 # 更新日志
+
+## v0.8.0 (2026-08-12)
+
+### 新功能
+
+- **撤销/重做 (Undo/Redo)**：支持 Ctrl+Z 撤销、Ctrl+Shift+Z / Ctrl+Y 重做，覆盖所有数据操作（文本编辑、增删行、增删工作表、重命名、导入）
+- **文本输入防抖**：连续打字只记录一次历史快照（500ms 间隔），避免历史栈被每次按键淹没
+- **标题栏撤销/重做按钮**：↶ / ↷ 按钮，禁用态视觉反馈
+- **焦点恢复**：撤销/重做后自动恢复到操作前的焦点行
+- **历史栈上限**：最多保留 100 步操作历史
 
 ## v0.7.1 (2026-08-12)
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, watch } from "vue";
+import { ref, computed, nextTick, onMounted, watch, onUnmounted } from "vue";
 import LineRow from "./components/LineRow.vue";
 import SummaryBar from "./components/SummaryBar.vue";
 import Sidebar from "./components/Sidebar.vue";
@@ -7,6 +7,7 @@ import ModalDialog from "./components/ModalDialog.vue";
 import { buildLineResults } from "./composables/useVariables";
 import { loadData, saveData } from "./composables/useStorage";
 import { exportJSON, exportCSV, exportMarkdown, importJSON } from "./composables/useImportExport";
+import { useUndoRedo } from "./composables/useUndoRedo";
 import type { Line, Worksheet, WorksheetData, LineResult } from "./types";
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
@@ -25,6 +26,29 @@ const lines = computed(() => activeSheet.value?.lines ?? []);
 
 // 行 ref 引用
 const lineRefs = ref<Array<InstanceType<typeof LineRow> | null>>([]);
+
+// ===== Undo/Redo 历史 =====
+const { canUndo, canRedo, pushHistory, undo, redo, clearHistory } = useUndoRedo();
+
+// 当前焦点行索引（用于 undo/redo 后恢复焦点）
+let currentFocusIndex = 0;
+
+// 文本输入防抖定时器
+let textDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+// 防抖期间是否已有待提交的历史快照
+let textDebouncePending = false;
+
+/** 记录文本编辑历史（防抖：500ms 内连续输入只记一次） */
+function pushTextHistory() {
+  if (textDebouncePending) return;
+  textDebouncePending = true;
+  pushHistory(sheets.value, activeSheetId.value, currentFocusIndex);
+  if (textDebounceTimer) clearTimeout(textDebounceTimer);
+  textDebounceTimer = setTimeout(() => {
+    textDebouncePending = false;
+    textDebounceTimer = null;
+  }, 500);
+}
 
 // ===== 主题 =====
 const theme = ref<"dark" | "light">("dark");
@@ -51,10 +75,18 @@ const summary = computed(() => {
 
 // ===== 行操作 =====
 function updateText(index: number, value: string) {
+  pushTextHistory();
   lines.value[index].text = value;
 }
 
 async function newLine(index: number) {
+  // 如果有防抖中的文本历史，先清除（结构操作会立即记录自己的快照）
+  if (textDebounceTimer) {
+    clearTimeout(textDebounceTimer);
+    textDebouncePending = false;
+  }
+  pushHistory(sheets.value, activeSheetId.value, index);
+  currentFocusIndex = index + 1;
   const item: Line = { id: nextLineId++, text: "" };
   lines.value.splice(index + 1, 0, item);
   await nextTick();
@@ -63,6 +95,12 @@ async function newLine(index: number) {
 
 async function deleteLine(index: number) {
   if (lines.value.length <= 1) return;
+  if (textDebounceTimer) {
+    clearTimeout(textDebounceTimer);
+    textDebouncePending = false;
+  }
+  pushHistory(sheets.value, activeSheetId.value, index);
+  currentFocusIndex = Math.max(0, index - 1);
   lines.value.splice(index, 1);
   const target = Math.max(0, index - 1);
   await nextTick();
@@ -71,6 +109,7 @@ async function deleteLine(index: number) {
 
 async function moveUp(index: number) {
   if (index > 0) {
+    currentFocusIndex = index - 1;
     await nextTick();
     lineRefs.value[index - 1]?.focus();
   }
@@ -78,6 +117,7 @@ async function moveUp(index: number) {
 
 async function moveDown(index: number) {
   if (index < lines.value.length - 1) {
+    currentFocusIndex = index + 1;
     await nextTick();
     lineRefs.value[index + 1]?.focus();
   } else {
@@ -96,17 +136,21 @@ function createSheet(name?: string): Worksheet {
 }
 
 function addSheet() {
+  pushHistory(sheets.value, activeSheetId.value, 0);
   const sheet = createSheet();
   sheets.value.push(sheet);
   activeSheetId.value = sheet.id;
+  currentFocusIndex = 0;
 }
 
 function selectSheet(id: string) {
   activeSheetId.value = id;
+  currentFocusIndex = 0;
   nextTick(() => lineRefs.value[0]?.focus());
 }
 
 function renameSheet(id: string, name: string) {
+  pushHistory(sheets.value, activeSheetId.value, currentFocusIndex);
   const sheet = sheets.value.find((s) => s.id === id);
   if (sheet) sheet.name = name;
 }
@@ -115,10 +159,12 @@ function deleteSheet(id: string) {
   if (sheets.value.length <= 1) return;
   const idx = sheets.value.findIndex((s) => s.id === id);
   if (idx === -1) return;
+  pushHistory(sheets.value, activeSheetId.value, 0);
   sheets.value.splice(idx, 1);
   if (activeSheetId.value === id) {
     activeSheetId.value = sheets.value[Math.max(0, idx - 1)].id;
   }
+  currentFocusIndex = 0;
 }
 
 // ===== 持久化 =====
@@ -173,14 +219,81 @@ async function doImport() {
   const content = await readTextFile(filePath);
   const imported = importJSON(content);
   if (imported && imported.length > 0) {
+    pushHistory(sheets.value, activeSheetId.value, 0);
     sheets.value = imported;
     activeSheetId.value = imported[0].id;
+    currentFocusIndex = 0;
   }
 }
 
 // ===== 关于对话框 =====
 const aboutVisible = ref(false);
-const APP_VERSION = "0.7.1";
+const APP_VERSION = "0.8.0";
+
+// ===== Undo / Redo =====
+async function doUndo() {
+  // 如果有防抖中的文本历史，先提交
+  if (textDebounceTimer) {
+    clearTimeout(textDebounceTimer);
+    textDebouncePending = false;
+  }
+  const snapshot = undo(sheets.value, activeSheetId.value, currentFocusIndex);
+  if (!snapshot) return;
+
+  sheets.value = snapshot.sheets;
+  activeSheetId.value = snapshot.activeSheetId;
+  currentFocusIndex = snapshot.focusIndex;
+
+  // 恢复 nextLineId（防止 id 冲突）
+  const maxId = Math.max(
+    ...sheets.value.flatMap((s) => s.lines.map((l) => l.id)),
+    0
+  );
+  nextLineId = maxId + 1;
+
+  await nextTick();
+  const targetIndex = Math.min(currentFocusIndex, lines.value.length - 1);
+  if (targetIndex >= 0) {
+    lineRefs.value[targetIndex]?.focus();
+  }
+}
+
+async function doRedo() {
+  const snapshot = redo(sheets.value, activeSheetId.value, currentFocusIndex);
+  if (!snapshot) return;
+
+  sheets.value = snapshot.sheets;
+  activeSheetId.value = snapshot.activeSheetId;
+  currentFocusIndex = snapshot.focusIndex;
+
+  // 恢复 nextLineId
+  const maxId = Math.max(
+    ...sheets.value.flatMap((s) => s.lines.map((l) => l.id)),
+    0
+  );
+  nextLineId = maxId + 1;
+
+  await nextTick();
+  const targetIndex = Math.min(currentFocusIndex, lines.value.length - 1);
+  if (targetIndex >= 0) {
+    lineRefs.value[targetIndex]?.focus();
+  }
+}
+
+// 全局键盘拦截：Ctrl+Z 撤销，Ctrl+Shift+Z / Ctrl+Y 重做
+function onGlobalKeydown(e: KeyboardEvent) {
+  // modal 打开时不拦截
+  if (aboutVisible.value) return;
+  if (document.querySelector(".modal-overlay")) return;
+
+  if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+    e.preventDefault();
+    doUndo();
+  } else if ((e.ctrlKey || e.metaKey) && ((e.shiftKey && e.key === "z") || e.key === "y")) {
+    e.preventDefault();
+    doRedo();
+  }
+}
 
 // ===== 初始化 =====
 onMounted(async () => {
@@ -204,6 +317,16 @@ onMounted(async () => {
 
   // 禁用 WebView 原生右键菜单（去掉浏览器「另存为/打印/更多工具」等无用项）
   document.addEventListener("contextmenu", (e) => e.preventDefault());
+
+  // 全局键盘拦截（Undo/Redo）
+  document.addEventListener("keydown", onGlobalKeydown);
+
+  // 初始化完成后清空历史栈（初始状态不入栈）
+  clearHistory();
+});
+
+onUnmounted(() => {
+  document.removeEventListener("keydown", onGlobalKeydown);
 });
 </script>
 
@@ -227,6 +350,9 @@ onMounted(async () => {
           <span class="sheet-name-badge">{{ activeSheet?.name }}</span>
         </div>
         <div class="title-right">
+          <button class="title-btn" @click="doUndo" :disabled="!canUndo" title="撤销 (Ctrl+Z)">↶</button>
+          <button class="title-btn" @click="doRedo" :disabled="!canRedo" title="重做 (Ctrl+Shift+Z)">↷</button>
+          <span class="title-divider"></span>
           <button class="title-btn" @click="doExport" title="导出（JSON/CSV/MD）">导出</button>
           <button class="title-btn" @click="doImport" title="导入 JSON">导入</button>
           <button class="theme-toggle" @click="toggleTheme" title="切换主题">
@@ -354,6 +480,18 @@ onMounted(async () => {
   margin-left: 4px;
   border-left: 1px solid var(--border-titlebar);
   padding-left: 12px;
+}
+
+.title-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.title-divider {
+  width: 1px;
+  height: 16px;
+  background-color: var(--border-titlebar);
+  margin: 0 4px;
 }
 
 .worksheet {

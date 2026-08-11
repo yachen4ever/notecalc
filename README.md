@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'b458ff07-efb7-4178-8f1c-493675d721b7'
-  PropagateID: 'b458ff07-efb7-4178-8f1c-493675d721b7'
-  ReservedCode1: 'ae5851e1-31fe-48cc-b2c5-359542d78743'
-  ReservedCode2: 'ae5851e1-31fe-48cc-b2c5-359542d78743'
+  ProduceID: '1d63ec3a-70cf-4265-bab0-5cc294269ecd'
+  PropagateID: '1d63ec3a-70cf-4265-bab0-5cc294269ecd'
+  ReservedCode1: 'e5c182a2-084b-4a9b-a6e6-6270a58d4eef'
+  ReservedCode2: 'e5c182a2-084b-4a9b-a6e6-6270a58d4eef'
 ---
 
 # notecalc
@@ -97,6 +97,7 @@ npm run tauri build
 - **v0.5** ✅ UI 润色：自定义弹窗、关于对话框、应用图标、导出重构
 - **v0.6** ✅ expr-eval 替换 mathjs（bundle -85%）、引用错误检测、中文大数单位、Tab 键导航
 - **v0.7** ✅ 复合单位智能识别（1天20小时48分钟→1.87天）、单位切换器 UI、单单位也支持切换
+- **v0.8** ✅ 撤销/重做（Ctrl+Z / Ctrl+Shift+Z）、文本防抖、焦点恢复
 
 ## License
 

@@ -3,13 +3,23 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '4194c5f0-c51a-482d-9be8-dd97f93b4e52'
-  PropagateID: '4194c5f0-c51a-482d-9be8-dd97f93b4e52'
-  ReservedCode1: '6771f7cc-ea1d-409f-8d46-1bc8addce9a4'
-  ReservedCode2: '6771f7cc-ea1d-409f-8d46-1bc8addce9a4'
+  ProduceID: 'f03c30d1-9d52-48bb-bf8f-9de9d804f5a1'
+  PropagateID: 'f03c30d1-9d52-48bb-bf8f-9de9d804f5a1'
+  ReservedCode1: '5e06fcee-6213-4c68-a7ba-a0f3543111cd'
+  ReservedCode2: '5e06fcee-6213-4c68-a7ba-a0f3543111cd'
 ---
 
 # Changelog
+
+## v0.8.0 (2026-08-12)
+
+### New Features
+
+- **Undo/Redo**: Support Ctrl+Z to undo, Ctrl+Shift+Z / Ctrl+Y to redo, covering all data operations (text editing, add/delete lines, add/delete sheets, rename, import)
+- **Text input debounce**: Consecutive typing only records one history snapshot (500ms interval), preventing the undo stack from being flooded by individual keystrokes
+- **Toolbar undo/redo buttons**: ↶ / ↷ buttons with disabled-state visual feedback
+- **Focus restoration**: Automatically restores focus to the line that was focused before undo/redo
+- **History stack limit**: Retains up to 100 steps of operation history
 
 ## v0.7.1 (2026-08-12)
 
