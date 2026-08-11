@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import type { Worksheet } from "../types";
+import ModalDialog from "./ModalDialog.vue";
 
 defineProps<{
   sheets: Worksheet[];
@@ -13,6 +15,15 @@ const emit = defineEmits<{
   "delete-sheet": [id: string];
 }>();
 
+// ===== 自定义弹窗状态 =====
+const modalVisible = ref(false);
+const modalMode = ref<"prompt" | "confirm">("prompt");
+const modalTitle = ref("");
+const modalMessage = ref("");
+const pendingAction = ref<((value: string) => void) | null>(null);
+
+const modalDefaultValue = ref("");
+
 function onAdd() {
   emit("add-sheet");
 }
@@ -22,16 +33,37 @@ function onSelect(id: string) {
 }
 
 function onRename(id: string, currentName: string) {
-  const newName = prompt("工作表名称", currentName);
-  if (newName !== null && newName.trim() !== "") {
-    emit("rename-sheet", id, newName.trim());
-  }
+  modalMode.value = "prompt";
+  modalTitle.value = "重命名工作表";
+  modalMessage.value = "请输入新名称";
+  modalDefaultValue.value = currentName;
+  pendingAction.value = (newName: string) => {
+    emit("rename-sheet", id, newName);
+  };
+  modalVisible.value = true;
 }
 
 function onDelete(id: string, name: string) {
-  if (confirm(`删除工作表"${name}"？`)) {
+  modalMode.value = "confirm";
+  modalTitle.value = "删除工作表";
+  modalMessage.value = `确定删除工作表"${name}"吗？`;
+  modalDefaultValue.value = "";
+  pendingAction.value = () => {
     emit("delete-sheet", id);
+  };
+  modalVisible.value = true;
+}
+
+function onModalConfirm(value: string) {
+  if (pendingAction.value) {
+    pendingAction.value(value);
   }
+  pendingAction.value = null;
+}
+
+function onModalClose() {
+  modalVisible.value = false;
+  pendingAction.value = null;
 }
 </script>
 
@@ -60,6 +92,17 @@ function onDelete(id: string, name: string) {
     <div class="sidebar-footer">
       <span class="hint">双击重命名</span>
     </div>
+
+    <!-- 自定义弹窗 -->
+    <ModalDialog
+      :visible="modalVisible"
+      :mode="modalMode"
+      :title="modalTitle"
+      :message="modalMessage"
+      :default-value="modalDefaultValue"
+      @confirm="onModalConfirm"
+      @close="onModalClose"
+    />
   </aside>
 </template>
 

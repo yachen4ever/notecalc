@@ -3,6 +3,7 @@ import { ref, computed, nextTick, onMounted, watch } from "vue";
 import LineRow from "./components/LineRow.vue";
 import SummaryBar from "./components/SummaryBar.vue";
 import Sidebar from "./components/Sidebar.vue";
+import ModalDialog from "./components/ModalDialog.vue";
 import { buildLineResults } from "./composables/useVariables";
 import { loadData, saveData } from "./composables/useStorage";
 import { exportJSON, exportCSV, exportMarkdown, importJSON } from "./composables/useImportExport";
@@ -181,6 +182,10 @@ function doImport() {
   input.click();
 }
 
+// ===== 关于对话框 =====
+const aboutVisible = ref(false);
+const APP_VERSION = "0.4.0-alpha.1";
+
 // ===== 初始化 =====
 onMounted(async () => {
   const data = await loadData();
@@ -230,8 +235,21 @@ onMounted(async () => {
           <button class="theme-toggle" @click="toggleTheme" title="切换主题">
             {{ theme === "dark" ? "\u2600" : "\u263d" }}
           </button>
+          <button class="title-btn about-btn" @click="aboutVisible = true" title="关于">关于</button>
         </div>
       </header>
+
+      <!-- 关于弹窗 -->
+      <ModalDialog
+        :visible="aboutVisible"
+        mode="about"
+        :version="APP_VERSION"
+        author="yachen"
+        email="bbwang@163.com"
+        repo="https://github.com/yachen4ever/notecalc"
+        @close="aboutVisible = false"
+        @confirm="aboutVisible = false"
+      />
 
       <!-- 工作区 -->
       <main class="worksheet">
@@ -333,6 +351,12 @@ onMounted(async () => {
 .theme-toggle:hover {
   background-color: var(--bg-row-hover);
   color: var(--text-primary);
+}
+
+.about-btn {
+  margin-left: 4px;
+  border-left: 1px solid var(--border-titlebar);
+  padding-left: 12px;
 }
 
 .worksheet {
