@@ -6,6 +6,7 @@ import { chineseDiscountRule } from "./rules/chineseDiscount";
 import { chinesePercentRule } from "./rules/chinesePercent";
 import { englishPercentRule } from "./rules/englishPercent";
 import { unitConversionRule } from "./rules/unitConversion";
+import { compoundUnitRule } from "./rules/compoundUnit";
 import { aggregateRule } from "./rules/aggregate";
 
 // 预编译表达式解析器（四则运算 + 括号 + 一元负号 + 取模）
@@ -17,6 +18,7 @@ rules.push(
   chinesePercentRule, // 中文百分比运算（120的15%、占百分比）
   englishPercentRule, // 英文百分比（10% off、10% of）
   unitConversionRule, // 单位转换（5km to mi）
+  compoundUnitRule, // 复合单位归一化（1天20小时48分钟）
   aggregateRule, // 聚合函数（平均/最大/最小/总和）
   numberExtractionRule, // 数字提取求和（兜底）
 );

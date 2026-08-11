@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { tokenize } from "../composables/useCalculator";
+import { tokenize, formatNumber } from "../composables/useCalculator";
 import type { LineResult } from "../types";
 
 const props = defineProps<{
@@ -18,12 +18,52 @@ const emit = defineEmits<{
 }>();
 
 const inputRef = ref<HTMLInputElement | null>(null);
+const unitMenuOpen = ref(false);
+const activeUnitIndex = ref(0);
 
 // 计算结果（V4：由父组件传入，支持变量引用）
 const lineResult = computed<LineResult>(() => props.result ?? { result: null, text: "" });
 
 // 语法高亮 tokens（响应式）
 const tokens = computed(() => tokenize(props.text));
+
+// 是否有可切换的单位
+const hasUnitSwitcher = computed(() => !!lineResult.value.unitInfo);
+
+// 当前展示的结果文本（可能是默认的，也可能是用户切换单位后的）
+const displayText = computed(() => {
+  const r = lineResult.value;
+  if (!r.unitInfo) return r.text;
+  // 如果用户没有手动切换，用默认的 text
+  if (!unitMenuOpen.value && activeUnitIndex.value === r.unitInfo.defaultUnitIndex) {
+    return r.text;
+  }
+  // 用 activeUnitIndex 对应的单位计算
+  const unit = r.unitInfo.units[activeUnitIndex.value];
+  const value = unit.fromBase
+    ? unit.fromBase(r.unitInfo.baseValue)
+    : r.unitInfo.baseValue / unit.factor;
+  return `${formatNumber(value)} ${unit.label}`;
+});
+
+// 初始化 activeUnitIndex
+function initActiveUnit() {
+  if (lineResult.value.unitInfo) {
+    activeUnitIndex.value = lineResult.value.unitInfo.defaultUnitIndex;
+  }
+}
+
+// 切换单位
+function switchUnit(index: number) {
+  activeUnitIndex.value = index;
+  unitMenuOpen.value = false;
+}
+
+// 计算某个单位的展示值
+function calcUnitValue(baseValue: number, unit: { factor: number; fromBase?: (v: number) => number }) {
+  const value = unit.fromBase ? unit.fromBase(baseValue) : baseValue / unit.factor;
+  return formatNumber(value);
+}
 
 // 键盘交互
 function onKeydown(e: KeyboardEvent) {
@@ -90,8 +130,35 @@ defineExpose({ focus });
     </div>
 
     <!-- 结果区 -->
-    <span class="line-result" :class="{ dim: lineResult.result === null, error: lineResult.error }" :title="lineResult.error">
-      {{ lineResult.error ? "⚠" : (lineResult.text || "—") }}
+    <span
+      class="line-result"
+      :class="{ dim: lineResult.result === null, error: lineResult.error, 'has-unit': hasUnitSwitcher }"
+      :title="lineResult.error"
+    >
+      <template v-if="lineResult.error">
+        ⚠
+      </template>
+      <template v-else-if="hasUnitSwitcher">
+        <span class="unit-display" @mouseenter="initActiveUnit(); unitMenuOpen = true" @mouseleave="unitMenuOpen = false">
+          {{ displayText }}
+          <span class="unit-arrow">▾</span>
+          <!-- 单位切换菜单 -->
+          <div v-if="unitMenuOpen" class="unit-menu" @mouseenter="unitMenuOpen = true">
+            <div
+              v-for="(unit, i) in lineResult.unitInfo!.units"
+              :key="i"
+              class="unit-option"
+              :class="{ active: i === activeUnitIndex }"
+              @click.stop="switchUnit(i)"
+            >
+              {{ calcUnitValue(lineResult.unitInfo!.baseValue, unit) }} {{ unit.label }}
+            </div>
+          </div>
+        </span>
+      </template>
+      <template v-else>
+        {{ lineResult.text || "—" }}
+      </template>
     </span>
   </div>
 </template>
@@ -181,5 +248,65 @@ defineExpose({ focus });
 .line-result.error {
   color: #ef4444;
   cursor: help;
+}
+
+/* ===== 单位切换器 ===== */
+.line-result.has-unit {
+  cursor: default;
+}
+
+.unit-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  position: relative;
+  padding: 2px 6px;
+  margin: -2px -6px;
+  border-radius: 4px;
+  transition: background-color 0.15s;
+}
+
+.unit-display:hover {
+  background-color: var(--bg-row-hover);
+}
+
+.unit-arrow {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-left: 1px;
+}
+
+.unit-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: var(--bg-titlebar);
+  border: 1px solid var(--border-titlebar);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  padding: 4px 0;
+  z-index: 100;
+  min-width: 120px;
+  white-space: nowrap;
+}
+
+.unit-option {
+  padding: 4px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: background-color 0.1s;
+}
+
+.unit-option:hover {
+  background-color: var(--bg-row-hover);
+  color: var(--text-primary);
+}
+
+.unit-option.active {
+  color: var(--accent);
+  font-weight: 500;
 }
 </style>

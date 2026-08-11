@@ -82,6 +82,8 @@ export interface LineComputeResult {
   assignment: { name: string; value: number } | null;
   /** 计算是否出错（如循环引用、引用不存在的行） */
   error?: string;
+  /** 复合单位信息（用于单位切换器 UI） */
+  unitInfo?: import("../types").UnitInfo;
 }
 
 /**
@@ -150,8 +152,8 @@ export function buildLineResults(lines: Line[]): LineComputeResult[] {
       results[i] = { result: null, text: "", deps, assignment: null, error };
       continue;
     }
-    const { result, text: resultText } = calculateLine(substituted);
-    results[i] = { result, text: resultText, deps, assignment: null };
+    const { result, text: resultText, unitInfo } = calculateLine(substituted);
+    results[i] = { result, text: resultText, deps, assignment: null, unitInfo };
     if (result !== null) {
       lineValues[i] = result;
     }
@@ -212,5 +214,5 @@ function escapeRegExp(s: string): string {
  * 从 buildLineResults 提取纯 LineResult 数组（用于兼容旧接口）
  */
 export function toLineResults(computeResults: LineComputeResult[]): LineResult[] {
-  return computeResults.map((r) => ({ result: r.result, text: r.text, error: r.error }));
+  return computeResults.map((r) => ({ result: r.result, text: r.text, error: r.error, unitInfo: r.unitInfo }));
 }

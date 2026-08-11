@@ -6,7 +6,7 @@ import type { LineResult } from "../../types";
 /**
  * 单位定义
  */
-interface UnitDef {
+export interface UnitDef {
   /** 单位名称（含别名） */
   names: string[];
   /** 转换为基准单位的系数（value × factor = baseValue） */
@@ -108,7 +108,7 @@ const units: UnitDef[] = [
 ];
 
 // 构建名称到 UnitDef 的查找表
-const unitMap = new Map<string, UnitDef>();
+export const unitMap = new Map<string, UnitDef>();
 for (const u of units) {
   for (const name of u.names) {
     unitMap.set(name.toLowerCase(), u);
@@ -176,6 +176,25 @@ function findConversionKeyword(text: string): string | null {
     if (lower.includes(kw)) return kw;
   }
   return null;
+}
+
+/**
+ * 获取指定类别的所有单位（从大到小排序），供复合单位规则使用
+ */
+export function getUnitsByCategory(category: string): UnitDef[] {
+  return units
+    .filter((u) => u.category === category)
+    .sort((a, b) => b.factor - a.factor);
+}
+
+/**
+ * 获取单位的默认显示名
+ * 优先使用中文名（如果有的话），否则用第一个名称
+ */
+export function getUnitLabel(unit: UnitDef): string {
+  // 找中文名
+  const cnName = unit.names.find((n) => /[\u4e00-\u9fff]/.test(n));
+  return cnName ?? unit.names[0];
 }
 
 /**
