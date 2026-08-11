@@ -3,13 +3,35 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '8721e2e8-25cc-4dbe-8890-eecc85fe4a65'
-  PropagateID: '8721e2e8-25cc-4dbe-8890-eecc85fe4a65'
-  ReservedCode1: 'dcec6aa9-f305-474d-ac32-414169b02168'
-  ReservedCode2: 'dcec6aa9-f305-474d-ac32-414169b02168'
+  ProduceID: 'bf71473b-ca2d-4294-a8d3-b67f4c84f866'
+  PropagateID: 'bf71473b-ca2d-4294-a8d3-b67f4c84f866'
+  ReservedCode1: '0dcd86a4-891a-4703-8e0b-e945e43fc78d'
+  ReservedCode2: '0dcd86a4-891a-4703-8e0b-e945e43fc78d'
 ---
 
 # 更新日志
+
+## v0.5.0-alpha.1 (2026-08-11)
+
+### 修复 + 改进
+
+- 修复：导出无反应（Tauri WebView 不支持 `a.download` + Blob URL），改用 `tauri-plugin-dialog` 保存对话框 + `tauri-plugin-fs` 写入
+- 合并：JSON / CSV / MD 三个导出按钮合一为「导出」，保存时选文件类型
+- 新增：禁用 WebView 原生右键菜单（去掉浏览器「另存为/打印/更多工具」等无用项）
+- 改进：关于界面图标由 emoji 换成真实应用图标
+- 新增依赖：`@tauri-apps/plugin-dialog` + `@tauri-apps/plugin-fs`
+
+---
+
+## v0.4.0-alpha.2 (2026-08-11)
+
+### V4.5 UI 润色
+
+- 新增：自定义弹窗组件 `ModalDialog.vue`，替换原生 `prompt`/`confirm`，修复标题显示 `tauri.localhost 显示` 问题
+- 新增：关于对话框（版本号 / 开发者 / 邮箱 / GitHub 项目地址）
+- 新增：新应用图标（记事本 + 计算器融合设计：深色背景、白色记事本线条、青色运算符号）
+
+---
 
 ## v0.4.0-alpha.1 (2026-08-11)
 

@@ -28,7 +28,8 @@ jobs:
           body: |
             ## ${{ github.ref_name }}
 
-            跨平台编译产物，详见 Assets。
+            更新日志见 CHANGELOG.md。
+          files: CHANGELOG.md
 
   # 第二步：跨平台并行构建
   build:
