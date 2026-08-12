@@ -192,7 +192,9 @@ jobs:
       - name: Upload binary to release
         uses: softprops/action-gh-release@v2
         with:
-          files: notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}.*
+          files: |
+            notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}.*
+            notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}-setup.*
 
   # 第三步：构建 Linux deb 包
   build-deb:
@@ -343,65 +345,7 @@ jobs:
         with:
           files: updates/latest.json
 
-      - name: Sync to Gitee Release
-        if: env.GITEE_TOKEN != ''
-        shell: bash
-        run: |
-          VERSION="${{ steps.ver.outputs.version }}"
-          TAG="${{ steps.ver.outputs.tag }}"
-          GITEE_OWNER="yachen"
-          GITEE_REPO="notecalc"
-          API="https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}"
-
-          # Download all release assets
-          mkdir -p assets
-          gh release download "$TAG" --dir assets/ --clobber
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
-
-      - name: Create Gitee Release and upload assets
-        if: env.GITEE_TOKEN != ''
-        shell: bash
-        run: |
-          VERSION="${{ steps.ver.outputs.version }}"
-          TAG="${{ steps.ver.outputs.tag }}"
-          GITEE_OWNER="yachen"
-          GITEE_REPO="notecalc"
-          API="https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}"
-
-          # Create release
-          RELEASE_RESP=$(curl -s -X POST "${API}/releases" \
-            -H "Content-Type: application/json;charset=UTF-8" \
-            -d "{
-              \"access_token\": \"${GITEE_TOKEN}\",
-              \"tag_name\": \"${TAG}\",
-              \"name\": \"${TAG}\",
-              \"body\": \"Notecalc ${VERSION}\",
-              \"target_commitish\": \"main\"
-            }")
-          RELEASE_ID=$(echo "$RELEASE_RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))")
-          echo "Gitee Release ID: $RELEASE_ID"
-          if [ -z "$RELEASE_ID" ]; then
-            echo "Failed to create Gitee Release"
-            echo "$RELEASE_RESP"
-            exit 1
-          fi
-
-          # Upload all assets to Gitee
-          for f in assets/*; do
-            if [ -f "$f" ]; then
-              echo "Uploading $(basename "$f") to Gitee..."
-              curl -s -X POST "${API}/releases/${RELEASE_ID}/attach_files" \
-                -H "Content-Type: multipart/form-data" \
-                -F "access_token=${GITEE_TOKEN}" \
-                -F "file=@${f}"
-            fi
-          done
-        env:
-          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
-
-      - name: Commit latest.json to repo
+      - name: Commit latest.json and sync to Gitee
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
@@ -412,6 +356,10 @@ jobs:
           else
             git commit -m "chore: update latest.json for ${{ steps.ver.outputs.tag }}"
             git push
+            # Sync to Gitee (for raw file access used by updater endpoint)
+            git remote add gitee "https://oauth2:${GITEE_TOKEN}@gitee.com/yachen/notecalc.git" 2>/dev/null || true
+            git push gitee main || echo "Warning: Gitee push failed, latest.json may need manual sync"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
