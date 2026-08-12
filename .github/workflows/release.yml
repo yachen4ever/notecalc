@@ -269,31 +269,24 @@ jobs:
           VERSION="${{ steps.ver.outputs.version }}"
           TAG="${{ steps.ver.outputs.tag }}"
           REPO="yachen4ever/notecalc"
-          # GitHub Release download base URL
           GH_BASE="https://github.com/${REPO}/releases/download/${TAG}"
 
           # Read signature files
-          MACOS_SIG=""
-          WIN_X64_SIG=""
-          WIN_X86_SIG=""
-          LINUX_SIG=""
-
+          declare -A SIGS
           for f in sigs/*.sig; do
             if [[ "$f" == *"macos-arm64"* ]]; then
-              MACOS_SIG=$(cat "$f")
+              SIGS[darwin-aarch64]=$(cat "$f")
             elif [[ "$f" == *"windows-x64"* ]]; then
-              WIN_X64_SIG=$(cat "$f")
+              SIGS[windows-x86_64]=$(cat "$f")
             elif [[ "$f" == *"windows-x86"* ]]; then
-              WIN_X86_SIG=$(cat "$f")
+              SIGS[windows-i686]=$(cat "$f")
             elif [[ "$f" == *"linux-amd64"* ]]; then
-              LINUX_SIG=$(cat "$f")
+              SIGS[linux-x86_64]=$(cat "$f")
             fi
           done
 
-          # Get current date in RFC 3339
           PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          # Extract changelog for this version
           NOTES=$(awk -v tag="## ${TAG}" '
             $0 ~ "^"tag { found=1; next }
             /^## / && found { exit }
@@ -303,73 +296,45 @@ jobs:
             NOTES="更新内容见 CHANGELOG.md"
           fi
 
-          # Determine download URLs (use Gitee if available, otherwise GitHub)
-          if [ -n "$GITEE_TOKEN" ]; then
-            # Gitee Release URLs will be set after upload
-            # For now use GitHub as fallback, Gitee URLs will be updated
-            URL_BASE="${GH_BASE}"
-          else
-            URL_BASE="${GH_BASE}"
-          fi
+          export VERSION NOTES PUB_DATE GH_BASE
+          declare -p SIGS > /tmp/sigs.env
+          python3 << 'PYEOF'
+          import json, os, subprocess
 
-          # Generate latest.json
-          # macOS arm64
-          MACOS_URL="${URL_BASE}/notecalc-${VERSION}-macos-arm64.app.tar.gz"
-          # Windows x64
-          WIN_X64_URL="${URL_BASE}/notecalc-${VERSION}-windows-x64-setup.exe"
-          # Windows x86
-          WIN_X86_URL="${URL_BASE}/notecalc-${VERSION}-windows-x86-setup.exe"
-          # Linux amd64
-          LINUX_URL="${URL_BASE}/notecalc-${VERSION}-linux-amd64.AppImage"
+          version = os.environ['VERSION']
+          notes = os.environ['NOTES']
+          pub_date = os.environ['PUB_DATE']
+          gh_base = os.environ['GH_BASE']
 
-          # Build platforms object
-          PLATFORMS='{}'
-          if [ -n "$MACOS_SIG" ]; then
-            PLATFORMS=$(echo "$PLATFORMS" | python3 -c "
-              import json, sys
-              d = json.load(sys.stdin)
-              d['darwin-aarch64'] = {'signature': '''$MACOS_SIG''', 'url': '$MACOS_URL'}
-              json.dump(d, sys.stdout)
-            ")
-          fi
-          if [ -n "$WIN_X64_SIG" ]; then
-            PLATFORMS=$(echo "$PLATFORMS" | python3 -c "
-              import json, sys
-              d = json.load(sys.stdin)
-              d['windows-x86_64'] = {'signature': '''$WIN_X64_SIG''', 'url': '$WIN_X64_URL'}
-              json.dump(d, sys.stdout)
-            ")
-          fi
-          if [ -n "$WIN_X86_SIG" ]; then
-            PLATFORMS=$(echo "$PLATFORMS" | python3 -c "
-              import json, sys
-              d = json.load(sys.stdin)
-              d['windows-i686'] = {'signature': '''$WIN_X86_SIG''', 'url': '$WIN_X86_URL'}
-              json.dump(d, sys.stdout)
-            ")
-          fi
-          if [ -n "$LINUX_SIG" ]; then
-            PLATFORMS=$(echo "$PLATFORMS" | python3 -c "
-              import json, sys
-              d = json.load(sys.stdin)
-              d['linux-x86_64'] = {'signature': '''$LINUX_SIG''', 'url': '$LINUX_URL'}
-              json.dump(d, sys.stdout)
-            ")
-          fi
+          # Read signatures from the exported associative array
+          sigs = {}
+          sig_env = open('/tmp/sigs.env').read()
+          # Parse BASH declare output for associative array
+          import re
+          for m in re.finditer(r'\[([^\]]+)\]="([^"]*)"', sig_env):
+              sigs[m.group(1)] = m.group(2)
 
-          # Generate final JSON
-          python3 -c "
-          import json
+          platforms = {}
+          url_map = {
+              'darwin-aarch64': f'{gh_base}/notecalc-{version}-macos-arm64.app.tar.gz',
+              'windows-x86_64': f'{gh_base}/notecalc-{version}-windows-x64-setup.exe',
+              'windows-i686': f'{gh_base}/notecalc-{version}-windows-x86-setup.exe',
+              'linux-x86_64': f'{gh_base}/notecalc-{version}-linux-amd64.AppImage',
+          }
+          for target, sig in sigs.items():
+              if sig and target in url_map:
+                  platforms[target] = {'signature': sig, 'url': url_map[target]}
+
           data = {
-            'version': '$VERSION',
-            'notes': '''$NOTES''',
-            'pub_date': '$PUB_DATE',
-            'platforms': $PLATFORMS
+              'version': version,
+              'notes': notes,
+              'pub_date': pub_date,
+              'platforms': platforms
           }
           with open('updates/latest.json', 'w') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+              json.dump(data, f, indent=2, ensure_ascii=False)
           print(json.dumps(data, indent=2, ensure_ascii=False))
-          "
+          PYEOF
         env:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
 
@@ -413,7 +378,7 @@ jobs:
               \"tag_name\": \"${TAG}\",
               \"name\": \"${TAG}\",
               \"body\": \"Notecalc ${VERSION}\",
-              \"target_commitish\": \"master\"
+              \"target_commitish\": \"main\"
             }")
           RELEASE_ID=$(echo "$RELEASE_RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))")
           echo "Gitee Release ID: $RELEASE_ID"
