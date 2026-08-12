@@ -10,6 +10,7 @@ import type { LineResult, UnitInfo, UnitOption } from "../../types";
  * 支持的写法：
  *   "1天20小时48分钟"     → 1.87 天（可切换 小时/分钟/秒）
  *   "1kg + 200g"         → 1.2 kg（可切换 g/mg/吨）
+ *   "1天 - 10小时"       → 0.58 天（减法运算）
  *   "1km 500m 20cm"      → 1.5 km（可切换 m/cm/mm）
  *   "2小时30分钟"         → 2.5 小时（可切换 分钟/秒）
  *   "1小时"              → 1 小时（可切换 分钟/秒/天）  ← 单单位也触发
@@ -39,13 +40,13 @@ export const compoundUnitRule: SemanticRule = {
     // 温度不支持复合（30摄氏度 没有切换意义）
     if (category === "temperature") return null;
 
-    // 归一化为基准值
+    // 归一化为基准值（含符号）
     let baseValue = 0;
-    for (const { value, unit } of matches) {
+    for (const { value, unit, sign } of matches) {
       if (unit.toBase) {
-        baseValue += unit.toBase(value);
+        baseValue += sign * unit.toBase(value);
       } else {
-        baseValue += value * unit.factor;
+        baseValue += sign * value * unit.factor;
       }
     }
 
@@ -89,41 +90,54 @@ export const compoundUnitRule: SemanticRule = {
 };
 
 /**
- * 从文本中提取所有 "数字+单位" 的组合
- * 匹配：数字 + 可选空格 + 单位名，支持 + 号分隔
+ * 从文本中提取所有 "数字+单位" 的组合，含运算符（+/-）
+ * 匹配：数字 + 可选空格 + 单位名，支持 +/- 号分隔
+ *
+ * 运算符逻辑：
+ *   - 第一个数字+单位默认为正（前面无运算符或有 +）
+ *   - 后续数字+单位前如果有 - 号则为负，否则为正
+ *   - + 号和空格都是默认加法
+ *   - 支持连续写法："1天-10小时"、"1kg - 200g"、"1天 2小时"
  *
  * 由于单位名可能包含数字（如 km2、m2），不能简单用正则匹配单位名。
  * 改为：先匹配数字，再从 unitMap 中按名称长度降序尝试匹配。
  */
-function extractUnitPairs(text: string): { value: number; unit: UnitDef }[] {
-  // 去掉 + 号两边的空格，统一处理
-  const cleaned = text.replace(/\s*\+\s*/g, " ");
-
-  // 按名称长度降序排列，优先匹配更长的单位名（如 "千米" 优先于 "米"）
+function extractUnitPairs(text: string): { value: number; unit: UnitDef; sign: 1 | -1 }[] {
+  // 记录每个数字+单位对前面的运算符位置，用于判断 sign
   const sortedNames = [...unitMap.entries()].sort((a, b) => b[0].length - a[0].length);
 
-  const pairs: { value: number; unit: UnitDef }[] = [];
+  const pairs: { value: number; unit: UnitDef; sign: 1 | -1 }[] = [];
   // 匹配数字（含千分位逗号和小数）
   const numRegex = /\d[\d,]*\.?\d*/g;
   let match: RegExpExecArray | null;
+  let prevMatchEnd = 0; // 上一个已消耗的字符位置
 
-  while ((match = numRegex.exec(cleaned)) !== null) {
+  while ((match = numRegex.exec(text)) !== null) {
     const value = parseNumber(match[0]);
     if (value === null) continue;
 
     // 从数字后面开始尝试匹配单位名
-    const afterNum = cleaned.slice(match.index + match[0].length);
+    const afterNum = text.slice(match.index + match[0].length);
     // 跳过空格
     const trimmedAfter = afterNum.replace(/^\s*/, "");
 
+    let matched = false;
     for (const [name, unit] of sortedNames) {
       if (trimmedAfter.toLowerCase().startsWith(name)) {
-        pairs.push({ value, unit });
+        // 检查这个数字前面的文本中是否有 - 号（在上一个已消耗位置之后）
+        const between = text.slice(prevMatchEnd, match.index);
+        const sign: 1 | -1 = /-/.test(between) ? -1 : 1;
+        pairs.push({ value, unit, sign });
         // 跳过已匹配的部分（数字 + 空格 + 单位名）
         const consumed = match[0].length + (afterNum.length - trimmedAfter.length) + name.length;
-        numRegex.lastIndex = match.index + consumed;
+        prevMatchEnd = match.index + consumed;
+        numRegex.lastIndex = prevMatchEnd;
+        matched = true;
         break;
       }
+    }
+    if (!matched) {
+      // 这个数字没有跟单位，跳过
     }
   }
 

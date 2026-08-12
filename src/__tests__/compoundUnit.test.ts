@@ -81,6 +81,66 @@ describe("V6 - 复合单位归一化 (compoundUnit)", () => {
     expect(r1!.result).toBe(r2!.result);
   });
 
+  // ===== 减法运算 =====
+  it("1天 - 10小时 → 减法，0.58 天", () => {
+    const result = compoundUnitRule.match("1天 - 10小时");
+    expect(result).not.toBeNull();
+    // 1天 = 86400秒, 10小时 = 36000秒, 差 = 50400秒
+    expect(result!.result).toBe(50400);
+    expect(result!.text).toContain("天");
+    expect(result!.text).toContain("0.58");
+  });
+
+  it("1天-10小时 → 无空格减法也能识别", () => {
+    const result = compoundUnitRule.match("1天-10小时");
+    expect(result).not.toBeNull();
+    expect(result!.result).toBe(50400);
+    expect(result!.text).toContain("0.58");
+  });
+
+  it("2kg - 500g → 减法", () => {
+    const result = compoundUnitRule.match("2kg - 500g");
+    expect(result).not.toBeNull();
+    // 2kg = 2000g, 500g, 差 = 1500g
+    expect(result!.result).toBe(1500);
+    expect(result!.text).toContain("千克");
+    expect(result!.text).toContain("1.5");
+  });
+
+  it("5km - 200m → 减法", () => {
+    const result = compoundUnitRule.match("5km - 200m");
+    expect(result).not.toBeNull();
+    // 5km = 5000m, 200m, 差 = 4800m
+    expect(result!.result).toBe(4800);
+    expect(result!.text).toContain("千米");
+  });
+
+  it("1天 - 2小时 + 30分钟 → 混合加减", () => {
+    const result = compoundUnitRule.match("1天 - 2小时 + 30分钟");
+    expect(result).not.toBeNull();
+    // 86400 - 7200 + 1800 = 81000秒
+    expect(result!.result).toBe(81000);
+    expect(result!.text).toContain("天");
+  });
+
+  it("减法结果为负数也正常计算", () => {
+    const result = compoundUnitRule.match("100g - 2kg");
+    expect(result).not.toBeNull();
+    // 100 - 2000 = -1900g
+    expect(result!.result).toBe(-1900);
+  });
+
+  it("+ 号和空格的混合使用", () => {
+    const r1 = compoundUnitRule.match("1天 2小时 30分钟");
+    const r2 = compoundUnitRule.match("1天 + 2小时 + 30分钟");
+    const r3 = compoundUnitRule.match("1天 + 2小时 30分钟");
+    expect(r1).not.toBeNull();
+    expect(r2).not.toBeNull();
+    expect(r3).not.toBeNull();
+    expect(r1!.result).toBe(r2!.result);
+    expect(r1!.result).toBe(r3!.result);
+  });
+
   // ===== 单单位也触发（可切换） =====
   it("1小时 → 单单位也触发，默认展示小时，可切换", () => {
     const result = compoundUnitRule.match("1小时");

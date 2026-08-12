@@ -3,13 +3,19 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '1b04fa74-4d54-4ae8-a445-6bc63481317d'
-  PropagateID: '1b04fa74-4d54-4ae8-a445-6bc63481317d'
-  ReservedCode1: 'd7706f5d-13b9-4a7f-be08-dac9011bfa8c'
-  ReservedCode2: 'd7706f5d-13b9-4a7f-be08-dac9011bfa8c'
+  ProduceID: '2d22b955-2303-4ae1-905f-34c21e6721f8'
+  PropagateID: '2d22b955-2303-4ae1-905f-34c21e6721f8'
+  ReservedCode1: 'e3f7e3a3-86b7-46cf-a8f0-2e50ac014eb4'
+  ReservedCode2: 'e3f7e3a3-86b7-46cf-a8f0-2e50ac014eb4'
 ---
 
 # 更新日志
+
+## v0.8.1 (2026-08-12)
+
+### 修复
+
+- **复合单位支持减法运算**：`1天-10小时` → 0.58 天（原来忽略减号全部按加法算，导致 1.42 天的错误结果）。支持 `+`/`-`/空格三种连接方式及混合使用（如 `1天 - 2小时 + 30分钟`）
 
 ## v0.8.0 (2026-08-12)
 

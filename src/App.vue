@@ -228,7 +228,7 @@ async function doImport() {
 
 // ===== 关于对话框 =====
 const aboutVisible = ref(false);
-const APP_VERSION = "0.8.0";
+const APP_VERSION = "0.8.1";
 
 // ===== Undo / Redo =====
 async function doUndo() {

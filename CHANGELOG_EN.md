@@ -3,13 +3,19 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'f03c30d1-9d52-48bb-bf8f-9de9d804f5a1'
-  PropagateID: 'f03c30d1-9d52-48bb-bf8f-9de9d804f5a1'
-  ReservedCode1: '5e06fcee-6213-4c68-a7ba-a0f3543111cd'
-  ReservedCode2: '5e06fcee-6213-4c68-a7ba-a0f3543111cd'
+  ProduceID: '28efb3d1-f93e-4686-9be1-9cfb676f3781'
+  PropagateID: '28efb3d1-f93e-4686-9be1-9cfb676f3781'
+  ReservedCode1: '84b2f418-4b81-4bb2-83e3-b69c668cd267'
+  ReservedCode2: '84b2f418-4b81-4bb2-83e3-b69c668cd267'
 ---
 
 # Changelog
+
+## v0.8.1 (2026-08-12)
+
+### Fixes
+
+- **Compound unit supports subtraction**: `1天-10小时` → 0.58 days (previously the minus sign was ignored and everything was added, giving 1.42 days). Supports `+`/`-`/space as delimiters and mixed usage (e.g. `1天 - 2小时 + 30分钟`)
 
 ## v0.8.0 (2026-08-12)
 
