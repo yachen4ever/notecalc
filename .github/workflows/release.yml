@@ -19,6 +19,22 @@ jobs:
       release-id: ${{ steps.create.outputs.id }}
     steps:
       - uses: actions/checkout@v4
+      - name: Clean up existing releases for this tag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          echo "Checking for existing releases tagged $TAG..."
+          RELEASE_IDS=$(gh api repos/${{ github.repository }}/releases --jq ".[] | select(.tag_name==\"$TAG\") | .id")
+          if [ -n "$RELEASE_IDS" ]; then
+            for id in $RELEASE_IDS; do
+              echo "Deleting existing release $id..."
+              gh api -X DELETE "repos/${{ github.repository }}/releases/$id" || true
+            done
+          else
+            echo "No existing releases found."
+          fi
       - name: Extract changelog for this version
         id: changelog
         shell: bash
