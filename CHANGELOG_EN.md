@@ -3,13 +3,31 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '28efb3d1-f93e-4686-9be1-9cfb676f3781'
-  PropagateID: '28efb3d1-f93e-4686-9be1-9cfb676f3781'
-  ReservedCode1: '84b2f418-4b81-4bb2-83e3-b69c668cd267'
-  ReservedCode2: '84b2f418-4b81-4bb2-83e3-b69c668cd267'
+  ProduceID: 'aabea98f-f391-458a-a57c-96dbde3d3581'
+  PropagateID: 'aabea98f-f391-458a-a57c-96dbde3d3581'
+  ReservedCode1: '87577c54-9b0b-427d-afdb-bedb1b5f6772'
+  ReservedCode2: '87577c54-9b0b-427d-afdb-bedb1b5f6772'
 ---
 
 # Changelog
+
+## v0.9.0 (2026-08-12)
+
+### New Features
+
+- **Auto-update**: Silent update check on app launch (3s delay), or manually via the "Check for Updates" button in the toolbar
+  - Powered by Tauri v2 Updater plugin, checks version from Gitee-hosted `latest.json`
+  - Update dialog shows version number and release notes, with one-click download, install, and automatic restart
+  - Real-time download progress display, auto-restart after installation
+  - Update packages verified with Ed25519 signatures for integrity
+  - Supports macOS (.app.tar.gz), Windows (NSIS -setup.exe), and Linux (.AppImage) auto-update
+
+### Technical Details
+
+- Added `tauri-plugin-updater` + `tauri-plugin-process` plugins
+- Added `useVersion.ts` for unified version management, `useUpdater.ts` wrapping check/download/install/relaunch logic
+- CI auto-collects per-platform signature files and generates `latest.json`, uploaded to both GitHub Release and Gitee Release
+- Generated Ed25519 signing keypair — public key embedded in `tauri.conf.json`, private key stored in GitHub Secrets
 
 ## v0.8.1 (2026-08-12)
 

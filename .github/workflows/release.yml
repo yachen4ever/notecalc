@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 jobs:
-  # 第一步：创建 GitHub Release（只有一个 job 创建，避免并发冲突）
+  # 第一步：创建 GitHub Release
   create-release:
     runs-on: ubuntu-latest
     outputs:
@@ -23,10 +23,7 @@ jobs:
         id: changelog
         shell: bash
         run: |
-          # 从 CHANGELOG.md 提取当前 tag 对应版本的更新内容
-          # 格式：## v0.6.0 (2026-08-11) 到下一个 ## 之间
           TAG="${GITHUB_REF_NAME}"
-          # 提取该 tag 段落（从 "## $TAG" 到下一个 "## " 之间的内容）
           BODY=$(awk -v tag="## ${TAG}" '
             $0 ~ "^"tag { found=1; next }
             /^## / && found { exit }
@@ -35,7 +32,6 @@ jobs:
           if [ -z "$BODY" ]; then
             BODY="更新内容见 CHANGELOG.md。"
           fi
-          # 输出到 GITHUB_ENV 供后续 step 使用
           {
             echo "BODY<<CHANGELOG_EOF"
             echo "$BODY"
@@ -50,29 +46,29 @@ jobs:
           body: ${{ env.BODY }}
           files: CHANGELOG.md
 
-  # 第二步：跨平台并行构建
+  # 第二步：跨平台并行构建（含签名）
   build:
     needs: create-release
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Windows x64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             label: windows-x64
-          # Windows x86
+            updater_target: windows-x86_64
           - os: windows-latest
             target: i686-pc-windows-msvc
             label: windows-x86
-          # Linux amd64
+            updater_target: windows-i686
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             label: linux-amd64
-          # macOS arm64
+            updater_target: linux-x86_64
           - os: macos-latest
             target: aarch64-apple-darwin
             label: macos-arm64
+            updater_target: darwin-aarch64
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -82,23 +78,17 @@ jobs:
         shell: bash
         run: |
           RAW="${GITHUB_REF_NAME#v}"
-          # Normalize to semver: 0.2-alpha.2 → 0.2.0-alpha.2, 0.2 → 0.2.0
           VERSION=$(echo "$RAW" | sed -E 's/^([0-9]+\.[0-9]+)(-[a-zA-Z0-9.]+)?$/\1.0\2/')
-          # Windows MSI (WiX) requires numeric-only ProductVersion, so tauri.conf.json
-          # uses the suffix-stripped version. Artifact filenames keep the full version.
           TAURI_VERSION="$VERSION"
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             TAURI_VERSION=$(echo "$VERSION" | sed -E 's/-.*$//')
           fi
           echo "Raw: $RAW → File: $VERSION, Tauri: $TAURI_VERSION (runner: $RUNNER_OS)"
-          # Update tauri.conf.json
           if command -v jq &>/dev/null; then
             jq --arg v "$TAURI_VERSION" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
           else
-            # macOS runners may not have jq pre-installed
             python3 -c "import json; f='src-tauri/tauri.conf.json'; d=json.load(open(f)); d['version']='$TAURI_VERSION'; json.dump(d, open(f,'w'), indent=2)"
           fi
-          # Update package.json
           python3 -c "import json; f='package.json'; d=json.load(open(f)); d['version']='$TAURI_VERSION'; json.dump(d, open(f,'w'), indent=2)"
 
       - name: Install Rust stable
@@ -120,7 +110,10 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Build Tauri
+      - name: Build Tauri (with updater signing)
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npm run tauri -- build --target ${{ matrix.target }}
 
       - name: Get version (full, for artifact filenames)
@@ -144,7 +137,43 @@ jobs:
           Compress-Archive -Path $exe -DestinationPath "notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}.zip"
           Copy-Item $exe -Destination "notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}.exe"
 
-      - name: Upload to release
+      # 收集 updater 产物（签名后的安装包 + .sig 签名文件）
+      - name: Collect updater artifacts (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          BUNDLE_DIR="src-tauri/target/${{ matrix.target }}/release/bundle/macos"
+          cp "$BUNDLE_DIR/notecalc.app.tar.gz" "notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}.app.tar.gz"
+          cp "$BUNDLE_DIR/notecalc.app.tar.gz.sig" "notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}.app.tar.gz.sig"
+
+      - name: Collect updater artifacts (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $nsisDir = "src-tauri/target/${{ matrix.target }}/release/bundle/nsis"
+          if (Test-Path "$nsisDir") {
+            $setup = Get-ChildItem "$nsisDir/*-setup.exe" | Select-Object -First 1
+            if ($setup) {
+              Copy-Item $setup.FullName "notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}-setup.exe"
+              $sig = $setup.FullName + ".sig"
+              if (Test-Path $sig) {
+                Copy-Item $sig "notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}-setup.exe.sig"
+              }
+            }
+          }
+
+      - name: Collect updater artifacts (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          APPIMAGE_DIR="src-tauri/target/${{ matrix.target }}/release/bundle/appimage"
+          APPIMAGE=$(find "$APPIMAGE_DIR" -name "*.AppImage" | head -1)
+          if [ -n "$APPIMAGE" ]; then
+            cp "$APPIMAGE" "notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}.AppImage"
+            if [ -f "$APPIMAGE.sig" ]; then
+              cp "$APPIMAGE.sig" "notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}.AppImage.sig"
+            fi
+          fi
+
+      - name: Upload binary to release
         uses: softprops/action-gh-release@v2
         with:
           files: notecalc-${{ steps.ver.outputs.version }}-${{ matrix.label }}.*
@@ -160,7 +189,6 @@ jobs:
         shell: bash
         run: |
           RAW="${GITHUB_REF_NAME#v}"
-          # Normalize to semver: 0.2-alpha.2 → 0.2.0-alpha.2, 0.2 → 0.2.0
           VERSION=$(echo "$RAW" | sed -E 's/^([0-9]+\.[0-9]+)(-[a-zA-Z0-9.]+)?$/\1.0\2/')
           echo "Raw: $RAW → Semver: $VERSION"
           jq --arg v "$VERSION" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
@@ -192,3 +220,214 @@ jobs:
         with:
           files: |
             src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
+
+  # 第四步：生成 latest.json + 同步到 Gitee
+  publish-update:
+    needs: [build, build-deb]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version info
+        id: ver
+        shell: bash
+        run: |
+          RAW="${GITHUB_REF_NAME#v}"
+          VERSION=$(echo "$RAW" | sed -E 's/^([0-9]+\.[0-9]+)(-[a-zA-Z0-9.]+)?$/\1.0\2/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Download all .sig files from release
+        run: |
+          mkdir -p sigs
+          gh release download ${{ steps.ver.outputs.tag }} --pattern "*.sig" --dir sigs/
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate latest.json
+        shell: bash
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          TAG="${{ steps.ver.outputs.tag }}"
+          REPO="yachen4ever/notecalc"
+          # GitHub Release download base URL
+          GH_BASE="https://github.com/${REPO}/releases/download/${TAG}"
+
+          # Read signature files
+          MACOS_SIG=""
+          WIN_X64_SIG=""
+          WIN_X86_SIG=""
+          LINUX_SIG=""
+
+          for f in sigs/*.sig; do
+            if [[ "$f" == *"macos-arm64"* ]]; then
+              MACOS_SIG=$(cat "$f")
+            elif [[ "$f" == *"windows-x64"* ]]; then
+              WIN_X64_SIG=$(cat "$f")
+            elif [[ "$f" == *"windows-x86"* ]]; then
+              WIN_X86_SIG=$(cat "$f")
+            elif [[ "$f" == *"linux-amd64"* ]]; then
+              LINUX_SIG=$(cat "$f")
+            fi
+          done
+
+          # Get current date in RFC 3339
+          PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          # Extract changelog for this version
+          NOTES=$(awk -v tag="## ${TAG}" '
+            $0 ~ "^"tag { found=1; next }
+            /^## / && found { exit }
+            found { print }
+          ' CHANGELOG.md | sed '/^---$/d' | sed 's/^[[:space:]]*$//' | sed -e :a -e '/./,$!d;/^\n*$/{$d;N;}' | sed -e 's/^\n//' | head -20)
+          if [ -z "$NOTES" ]; then
+            NOTES="更新内容见 CHANGELOG.md"
+          fi
+
+          # Determine download URLs (use Gitee if available, otherwise GitHub)
+          if [ -n "$GITEE_TOKEN" ]; then
+            # Gitee Release URLs will be set after upload
+            # For now use GitHub as fallback, Gitee URLs will be updated
+            URL_BASE="${GH_BASE}"
+          else
+            URL_BASE="${GH_BASE}"
+          fi
+
+          # Generate latest.json
+          # macOS arm64
+          MACOS_URL="${URL_BASE}/notecalc-${VERSION}-macos-arm64.app.tar.gz"
+          # Windows x64
+          WIN_X64_URL="${URL_BASE}/notecalc-${VERSION}-windows-x64-setup.exe"
+          # Windows x86
+          WIN_X86_URL="${URL_BASE}/notecalc-${VERSION}-windows-x86-setup.exe"
+          # Linux amd64
+          LINUX_URL="${URL_BASE}/notecalc-${VERSION}-linux-amd64.AppImage"
+
+          # Build platforms object
+          PLATFORMS='{}'
+          if [ -n "$MACOS_SIG" ]; then
+            PLATFORMS=$(echo "$PLATFORMS" | python3 -c "
+              import json, sys
+              d = json.load(sys.stdin)
+              d['darwin-aarch64'] = {'signature': '''$MACOS_SIG''', 'url': '$MACOS_URL'}
+              json.dump(d, sys.stdout)
+            ")
+          fi
+          if [ -n "$WIN_X64_SIG" ]; then
+            PLATFORMS=$(echo "$PLATFORMS" | python3 -c "
+              import json, sys
+              d = json.load(sys.stdin)
+              d['windows-x86_64'] = {'signature': '''$WIN_X64_SIG''', 'url': '$WIN_X64_URL'}
+              json.dump(d, sys.stdout)
+            ")
+          fi
+          if [ -n "$WIN_X86_SIG" ]; then
+            PLATFORMS=$(echo "$PLATFORMS" | python3 -c "
+              import json, sys
+              d = json.load(sys.stdin)
+              d['windows-i686'] = {'signature': '''$WIN_X86_SIG''', 'url': '$WIN_X86_URL'}
+              json.dump(d, sys.stdout)
+            ")
+          fi
+          if [ -n "$LINUX_SIG" ]; then
+            PLATFORMS=$(echo "$PLATFORMS" | python3 -c "
+              import json, sys
+              d = json.load(sys.stdin)
+              d['linux-x86_64'] = {'signature': '''$LINUX_SIG''', 'url': '$LINUX_URL'}
+              json.dump(d, sys.stdout)
+            ")
+          fi
+
+          # Generate final JSON
+          python3 -c "
+          import json
+          data = {
+            'version': '$VERSION',
+            'notes': '''$NOTES''',
+            'pub_date': '$PUB_DATE',
+            'platforms': $PLATFORMS
+          }
+          with open('updates/latest.json', 'w') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+          print(json.dumps(data, indent=2, ensure_ascii=False))
+          "
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+
+      - name: Upload latest.json to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: updates/latest.json
+
+      - name: Sync to Gitee Release
+        if: env.GITEE_TOKEN != ''
+        shell: bash
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          TAG="${{ steps.ver.outputs.tag }}"
+          GITEE_OWNER="yachen4ever"
+          GITEE_REPO="notecalc"
+          API="https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}"
+
+          # Download all release assets
+          mkdir -p assets
+          gh release download "$TAG" --dir assets/ --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+
+      - name: Create Gitee Release and upload assets
+        if: env.GITEE_TOKEN != ''
+        shell: bash
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          TAG="${{ steps.ver.outputs.tag }}"
+          GITEE_OWNER="yachen4ever"
+          GITEE_REPO="notecalc"
+          API="https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}"
+
+          # Create release
+          RELEASE_RESP=$(curl -s -X POST "${API}/releases" \
+            -H "Content-Type: application/json;charset=UTF-8" \
+            -d "{
+              \"access_token\": \"${GITEE_TOKEN}\",
+              \"tag_name\": \"${TAG}\",
+              \"name\": \"${TAG}\",
+              \"body\": \"Notecalc ${VERSION}\",
+              \"target_commitish\": \"master\"
+            }")
+          RELEASE_ID=$(echo "$RELEASE_RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))")
+          echo "Gitee Release ID: $RELEASE_ID"
+          if [ -z "$RELEASE_ID" ]; then
+            echo "Failed to create Gitee Release"
+            echo "$RELEASE_RESP"
+            exit 1
+          fi
+
+          # Upload all assets to Gitee
+          for f in assets/*; do
+            if [ -f "$f" ]; then
+              echo "Uploading $(basename "$f") to Gitee..."
+              curl -s -X POST "${API}/releases/${RELEASE_ID}/attach_files" \
+                -H "Content-Type: multipart/form-data" \
+                -F "access_token=${GITEE_TOKEN}" \
+                -F "file=@${f}"
+            fi
+          done
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+
+      - name: Commit latest.json to repo
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add updates/latest.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update latest.json for ${{ steps.ver.outputs.tag }}"
+            git push
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

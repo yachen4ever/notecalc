@@ -3,13 +3,31 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '2d22b955-2303-4ae1-905f-34c21e6721f8'
-  PropagateID: '2d22b955-2303-4ae1-905f-34c21e6721f8'
-  ReservedCode1: 'e3f7e3a3-86b7-46cf-a8f0-2e50ac014eb4'
-  ReservedCode2: 'e3f7e3a3-86b7-46cf-a8f0-2e50ac014eb4'
+  ProduceID: 'd51fb5fd-298a-4dd2-8f5b-ebd11a590aa7'
+  PropagateID: 'd51fb5fd-298a-4dd2-8f5b-ebd11a590aa7'
+  ReservedCode1: 'f5493875-c70b-4560-8bc8-64fff1261252'
+  ReservedCode2: 'f5493875-c70b-4560-8bc8-64fff1261252'
 ---
 
 # 更新日志
+
+## v0.9.0 (2026-08-12)
+
+### 新功能
+
+- **检查更新**：应用启动后自动静默检查更新（3秒延迟），也可手动点击标题栏"检查更新"按钮
+  - 基于 Tauri v2 Updater 插件，从 Gitee 托管的 `latest.json` 检查版本
+  - 发现新版本时弹出更新弹窗，显示版本号和更新说明，支持一键下载安装并自动重启
+  - 下载进度实时展示，安装完成后自动重启应用
+  - 更新包使用 Ed25519 签名验证，确保完整性
+  - 支持 macOS（.app.tar.gz）、Windows（NSIS -setup.exe）、Linux（.AppImage）三平台自动更新
+
+### 技术细节
+
+- 新增 `tauri-plugin-updater` + `tauri-plugin-process` 插件
+- 新增 `useVersion.ts` 统一版本号管理，`useUpdater.ts` 封装检查/下载/安装/重启逻辑
+- CI 自动收集各平台签名文件并生成 `latest.json`，同步上传到 GitHub Release 和 Gitee Release
+- 生成 Ed25519 签名密钥对，公钥内置在 `tauri.conf.json`，私钥存储在 GitHub Secrets
 
 ## v0.8.1 (2026-08-12)
 
