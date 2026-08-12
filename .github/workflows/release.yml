@@ -355,10 +355,11 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "chore: update latest.json for ${{ steps.ver.outputs.tag }}"
-            git push
+            # Push from detached HEAD to remote main branch
+            git push origin HEAD:main
             # Sync to Gitee (for raw file access used by updater endpoint)
             git remote add gitee "https://oauth2:${GITEE_TOKEN}@gitee.com/yachen/notecalc.git" 2>/dev/null || true
-            git push gitee main || echo "Warning: Gitee push failed, latest.json may need manual sync"
+            git push gitee HEAD:main || echo "Warning: Gitee push failed, latest.json may need manual sync"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

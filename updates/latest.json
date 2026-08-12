@@ -1,15 +1,23 @@
 {
   "version": "0.9.0",
   "notes": "### 新功能\n\n- **检查更新**：应用启动后自动静默检查更新（3秒延迟），也可手动点击标题栏\"检查更新\"按钮\n  - 基于 Tauri v2 Updater 插件，从 Gitee 托管的 `latest.json` 检查版本\n  - 发现新版本时弹出更新弹窗，显示版本号和更新说明，支持一键下载安装并自动重启\n  - 下载进度实时展示，安装完成后自动重启应用\n  - 更新包使用 Ed25519 签名验证，确保完整性\n  - 支持 macOS（.app.tar.gz）、Windows（NSIS -setup.exe）、Linux（.AppImage）三平台自动更新\n\n### 技术细节\n\n- 新增 `tauri-plugin-updater` + `tauri-plugin-process` 插件\n- 新增 `useVersion.ts` 统一版本号管理，`useUpdater.ts` 封装检查/下载/安装/重启逻辑\n- CI 自动收集各平台签名文件并生成 `latest.json`，同步上传到 GitHub Release 和 Gitee Release\n- 生成 Ed25519 签名密钥对，公钥内置在 `tauri.conf.json`，私钥存储在 GitHub Secrets",
-  "pub_date": "2026-08-12T12:01:39Z",
+  "pub_date": "2026-08-12T12:47:57Z",
   "platforms": {
+    "windows-i686": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRVGU3MGtkemNhMkNqQmh5Z2FZcTJDSm1GWFVCanRqL1JyUXdxWEVqZnNVd1RFek0wREZMeWhlTFFCbE9TN2krRkZ3RDJiL1FNSURuSmQybStUUkFHL3lUck90MjNwMndNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTM4ODYyCWZpbGU6bm90ZWNhbGNfMC45LjBfeDg2LXNldHVwLmV4ZQpQcnhmZkRwTFgwKzlZTVE0RkthTjhkeEN6T083N1BoR20zSXIxN0piRW45ZWkvR21QUTF1WHBEZDFtNWxKb2RGaGErTmtKMzZkVFpMWUxUYUpnaFRDUT09Cg==",
+      "url": "https://github.com/yachen4ever/notecalc/releases/download/v0.9.0/notecalc-0.9.0-windows-x86-setup.exe"
+    },
     "linux-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRVGU3MGtkemNhMkFvTnU0Nktzb2MwMnlIT2RBNlh0a0RjY1FVK2RvNlVBYlJaRkt6dU5rVjUvdWViY0gvUVZvRXV5T0pVWDNPYWZLWGlIN3RmeUI2YllaQ2FEbjZsdmc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTM1OTkxCWZpbGU6bm90ZWNhbGNfMC45LjBfYW1kNjQuQXBwSW1hZ2UKTm5vN0NtTW1ZVlh0ZnJyMytrc09Zcjg5OUc1QUFEMUZGOWVPZi9iRVVoRk5oMW9uWFlWZUxMOTZnQW1qTkx1eFdKUFl6RDVlKzcwTG0rakVTMmpoQlE9PQo=",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRVGU3MGtkemNhMkJTZmNOWTk3ZFY2VzJQUEE2Zlk1OEZOR3FneHFFL0pRNGhJZWJSUUtsV3dodUtDenJzS3pqUUZFRVQ3R2RDNUJEcStYeTFXcFJoUW5tN3Z1VFUxN3dZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTM4NzgzCWZpbGU6bm90ZWNhbGNfMC45LjBfYW1kNjQuQXBwSW1hZ2UKNXUrRXFqTFRObDBKN2tmM3E0VDQvdFJxdk1mZU5zemJ2eWs3dzFpbXVWK3JzUEtTdHBpcVNCWFpoZVVmMHB4Nm10dGhTQ2oyU21IazUzM2ZndThxQWc9PQo=",
       "url": "https://github.com/yachen4ever/notecalc/releases/download/v0.9.0/notecalc-0.9.0-linux-amd64.AppImage"
     },
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRVGU3MGtkemNhMkFyL2YrNWJIcEphd0swMDNJYVRNdGVtMlY1M0ZQNGI2dEI0OXo1UGdYbkx2bjEvKzNiRFhGL0pneHc3ek5MeGVFalc1eU1rQ2ZEN0xjKzUxM3laVEFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTM1OTIwCWZpbGU6bm90ZWNhbGMuYXBwLnRhci5negp2TFRRZ1hyK3lBdnYxWDRaTWFHUlEwS0pNQkpDM0ZSYXNHUU1VTjNQM0g0YXJWcXo0eTB5ZmdZMEtaREtjRlVBZXpJUG1lWVgxMkFsbTNsTXo4bFpBQT09Cg==",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRVGU3MGtkemNhMkttQlh5NzRzMW81V2ZrcUlKZ24wLzVvMlFMb0pmc1R2Yjg3ZW9xTGx3TnZNMDNNc0htMlZzbS9LRFFuMFBSSUpGTlA4WlJSTjN5MEc0a1VTaUlrVWdRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTM4Njk4CWZpbGU6bm90ZWNhbGMuYXBwLnRhci5nego2Ly8zZzh3YnoyWEIxTTRxa1RNWmNoN1l1UmpSV1lQODFtK2JTRGwxK09sZ3hpMWZ3Smw0cVR5eHZVNWg3V1g0eFBUSGFrbGJBN2h4MzN4ckRVTTFCUT09Cg==",
       "url": "https://github.com/yachen4ever/notecalc/releases/download/v0.9.0/notecalc-0.9.0-macos-arm64.app.tar.gz"
+    },
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRVGU3MGtkemNhMk9pQUh1Z2pOZ2JlV1pBY2FpNThYTi9td1k5RnJLRXArSWZnS3JvOC91N2xyZFpIWVVRMkc5RjB1aHd5YUFSYWhEUHpyaTdQOXZzT0s2dlFYSnJnZndzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTM4ODQ5CWZpbGU6bm90ZWNhbGNfMC45LjBfeDY0LXNldHVwLmV4ZQp1cUxqRDJ0UGJibkxRNGRyZ0puSmZXWFdmRTMzbGEzekVFTW5OTkFQaHJCa2ZUWTVqRnJ2bThSMHRwWjJYOVE4RkQxQmZQYmJUOUp5MndoenRlQWFEdz09Cg==",
+      "url": "https://github.com/yachen4ever/notecalc/releases/download/v0.9.0/notecalc-0.9.0-windows-x64-setup.exe"
     }
   }
 }
