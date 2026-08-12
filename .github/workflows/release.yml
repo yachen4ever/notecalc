@@ -365,7 +365,7 @@ jobs:
         run: |
           VERSION="${{ steps.ver.outputs.version }}"
           TAG="${{ steps.ver.outputs.tag }}"
-          GITEE_OWNER="yachen4ever"
+          GITEE_OWNER="yachen"
           GITEE_REPO="notecalc"
           API="https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}"
 
@@ -382,7 +382,7 @@ jobs:
         run: |
           VERSION="${{ steps.ver.outputs.version }}"
           TAG="${{ steps.ver.outputs.tag }}"
-          GITEE_OWNER="yachen4ever"
+          GITEE_OWNER="yachen"
           GITEE_REPO="notecalc"
           API="https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}"
 
