@@ -4,13 +4,17 @@ import LineRow from "./components/LineRow.vue";
 import SummaryBar from "./components/SummaryBar.vue";
 import Sidebar from "./components/Sidebar.vue";
 import ModalDialog from "./components/ModalDialog.vue";
+import SettingsDialog from "./components/SettingsDialog.vue";
 import { buildLineResults } from "./composables/useVariables";
 import { loadData, saveData } from "./composables/useStorage";
-import { exportJSON, exportCSV, exportMarkdown, importJSON } from "./composables/useImportExport";
+import { exportJSON, exportCSV, exportMarkdown, importJSON, writeFileWithEncoding } from "./composables/useImportExport";
 import { useUndoRedo } from "./composables/useUndoRedo";
 import { useUpdater } from "./composables/useUpdater";
 import { APP_VERSION } from "./composables/useVersion";
-import type { Line, Worksheet, WorksheetData, LineResult } from "./types";
+import { useSettings, loadSettings, saveSettings } from "./composables/useSettings";
+import { useI18n, setLanguage } from "./composables/useI18n";
+import { setFormatOptions } from "./composables/useCalculator";
+import type { Line, Worksheet, WorksheetData, LineResult, AppSettings, ThemeMode } from "./types";
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 
@@ -52,12 +56,54 @@ function pushTextHistory() {
   }, 500);
 }
 
-// ===== 主题 =====
-const theme = ref<"dark" | "light">("dark");
+// ===== 设置 =====
+const settings = useSettings();
+const { t } = useI18n();
+const settingsVisible = ref(false);
 
-function toggleTheme() {
-  theme.value = theme.value === "dark" ? "light" : "dark";
-  document.documentElement.setAttribute("data-theme", theme.value);
+/** 应用设置到 UI 和计算引擎 */
+function applySettings(s: AppSettings) {
+  // 字体
+  document.documentElement.style.setProperty("--app-font", s.font);
+  document.documentElement.style.setProperty("--app-font-size", `${s.fontSize}px`);
+
+  // 主题
+  applyTheme(s.theme);
+
+  // 语言
+  setLanguage(s.language);
+
+  // 计算格式化选项
+  setFormatOptions(s.decimalPlaces, s.thousandsSeparator);
+}
+
+/** 应用主题（支持 system 模式） */
+function applyTheme(mode: ThemeMode) {
+  let effective: "dark" | "light";
+  if (mode === "system") {
+    effective = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  } else {
+    effective = mode;
+  }
+  document.documentElement.setAttribute("data-theme", effective);
+}
+
+// 监听系统主题变化（仅 system 模式下生效）
+let mediaQuery: MediaQueryList | null = null;
+function onSystemThemeChange() {
+  if (settings.value.theme === "system") {
+    applyTheme("system");
+  }
+}
+
+function openSettings() {
+  settingsVisible.value = true;
+}
+
+function handleApplySettings(newSettings: AppSettings) {
+  settings.value = newSettings;
+  applySettings(newSettings);
+  saveSettings(newSettings);
 }
 
 // ===== 计算汇总（V4：含变量引用的完整构建） =====
@@ -132,7 +178,7 @@ function createSheet(name?: string): Worksheet {
   const id = `sheet_${Date.now()}`;
   return {
     id,
-    name: name || `工作表 ${sheets.value.length + 1}`,
+    name: name || `${t("worksheet")} ${sheets.value.length + 1}`,
     lines: [{ id: nextLineId++, text: "" }],
   };
 }
@@ -189,8 +235,9 @@ watch([sheets, activeSheetId], scheduleSave, { deep: true });
 // ===== 导入导出 =====
 async function doExport() {
   const baseName = activeSheet.value.name;
+  const defaultFmt = settings.value.defaultExportFormat;
   const filePath = await save({
-    defaultPath: baseName,
+    defaultPath: `${baseName}.${defaultFmt}`,
     filters: [
       { name: "JSON", extensions: ["json"] },
       { name: "CSV", extensions: ["csv"] },
@@ -203,6 +250,10 @@ async function doExport() {
   let content = "";
   if (ext === "csv") {
     content = exportCSV(activeSheet.value);
+    // CSV 按设置编码写入
+    const encoding = settings.value.exportEncoding === "gbk" ? "gbk" : "utf-8-bom";
+    await writeFileWithEncoding(filePath, content, encoding);
+    return;
   } else if (ext === "md") {
     content = exportMarkdown(activeSheet.value);
   } else {
@@ -328,7 +379,9 @@ async function doRedo() {
 function onGlobalKeydown(e: KeyboardEvent) {
   // modal 打开时不拦截
   if (aboutVisible.value) return;
+  if (settingsVisible.value) return;
   if (document.querySelector(".modal-overlay")) return;
+  if (document.querySelector(".settings-overlay")) return;
 
   if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
     e.preventDefault();
@@ -341,6 +394,14 @@ function onGlobalKeydown(e: KeyboardEvent) {
 
 // ===== 初始化 =====
 onMounted(async () => {
+  // 加载设置并应用
+  const s = await loadSettings();
+  applySettings(s);
+
+  // 设置系统主题监听
+  mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  mediaQuery.addEventListener("change", onSystemThemeChange);
+
   const data = await loadData();
   if (data && data.sheets.length > 0) {
     sheets.value = data.sheets;
@@ -352,7 +413,7 @@ onMounted(async () => {
     );
     nextLineId = maxId + 1;
   } else {
-    const sheet = createSheet("工作表 1");
+    const sheet = createSheet(`${t("worksheet")} 1`);
     sheets.value = [sheet];
     activeSheetId.value = sheet.id;
   }
@@ -371,6 +432,9 @@ onMounted(async () => {
 
 onUnmounted(() => {
   document.removeEventListener("keydown", onGlobalKeydown);
+  if (mediaQuery) {
+    mediaQuery.removeEventListener("change", onSystemThemeChange);
+  }
 });
 </script>
 
@@ -394,15 +458,13 @@ onUnmounted(() => {
           <span class="sheet-name-badge">{{ activeSheet?.name }}</span>
         </div>
         <div class="title-right">
-          <button class="title-btn" @click="doUndo" :disabled="!canUndo" title="撤销 (Ctrl+Z)">↶</button>
-          <button class="title-btn" @click="doRedo" :disabled="!canRedo" title="重做 (Ctrl+Shift+Z)">↷</button>
+          <button class="title-btn" @click="doUndo" :disabled="!canUndo" :title="t('undo') + ' (Ctrl+Z)'">↶</button>
+          <button class="title-btn" @click="doRedo" :disabled="!canRedo" :title="t('redo') + ' (Ctrl+Shift+Z)'">↷</button>
           <span class="title-divider"></span>
-          <button class="title-btn" @click="doExport" title="导出（JSON/CSV/MD）">导出</button>
-          <button class="title-btn" @click="doImport" title="导入 JSON">导入</button>
-          <button class="theme-toggle" @click="toggleTheme" title="切换主题">
-            {{ theme === "dark" ? "\u2600" : "\u263d" }}
-          </button>
-          <button class="title-btn about-btn" @click="openAbout" title="关于">关于</button>
+          <button class="title-btn" @click="doExport" :title="t('export') + ' (JSON/CSV/MD)'">{{ t("export") }}</button>
+          <button class="title-btn" @click="doImport" :title="t('import') + ' JSON'">{{ t("import") }}</button>
+          <button class="theme-toggle" @click="openSettings" :title="t('settings')">⚙</button>
+          <button class="title-btn about-btn" @click="openAbout" :title="t('about')">{{ t("about") }}</button>
         </div>
       </header>
 
@@ -423,6 +485,14 @@ onUnmounted(() => {
         @restart-app="handleRestartNow"
       />
 
+      <!-- 设置弹窗 -->
+      <SettingsDialog
+        :visible="settingsVisible"
+        :settings="settings"
+        @close="settingsVisible = false"
+        @apply="handleApplySettings"
+      />
+
       <!-- 工作区 -->
       <main class="worksheet">
         <LineRow
@@ -432,6 +502,7 @@ onUnmounted(() => {
           :index="index"
           :text="line.text"
           :result="lineResults[index] as LineResult"
+          :tab-behavior="settings.tabBehavior"
           @update:text="(val) => updateText(index, val)"
           @new-line="newLine(index)"
           @delete-line="deleteLine(index)"
@@ -511,7 +582,7 @@ onUnmounted(() => {
 .theme-toggle {
   background: none;
   border: none;
-  font-size: 16px;
+  font-size: 14px;
   cursor: pointer;
   color: var(--text-muted);
   padding: 4px 8px;

@@ -9,6 +9,19 @@ import { unitConversionRule } from "./rules/unitConversion";
 import { compoundUnitRule } from "./rules/compoundUnit";
 import { aggregateRule } from "./rules/aggregate";
 
+// ===== 格式化选项（全局上下文，由 App.vue 设置） =====
+interface FormatOptions {
+  decimals: number;
+  thousands: boolean;
+}
+
+let formatOptions: FormatOptions = { decimals: 2, thousands: true };
+
+/** 设置全局格式化选项（由 App.vue 调用） */
+export function setFormatOptions(decimals: number, thousands: boolean) {
+  formatOptions = { decimals, thousands };
+}
+
 // 预编译表达式解析器（四则运算 + 括号 + 一元负号 + 取模）
 const parser = new Parser();
 
@@ -49,7 +62,7 @@ export function calculateLine(text: string): LineResult {
     if (typeof value === "number" && !isNaN(value) && isFinite(value)) {
       // -0 → 0
       const normalized = value === 0 ? 0 : value;
-      return { result: normalized, text: formatNumber(normalized) };
+      return { result: normalized, text: formatNumber(normalized, formatOptions.decimals, formatOptions.thousands) };
     }
   } catch {
     // 表达式解析失败，继续走语义规则
@@ -95,21 +108,35 @@ function expandChineseMagnitude(text: string): string {
 
 /**
  * 格式化数字显示
- * - 整数直接显示，加千分位
- * - 小数默认保留 2 位，去掉末尾多余的 0
+ * - 整数直接显示，可选千分位
+ * - 小数按 decimals 保留位数，去掉末尾多余的 0
+ *
+ * 不传参数时使用全局格式化上下文（由 setFormatOptions 设置）。
+ *
+ * @param value 数值
+ * @param decimals 小数位数（省略则用全局设置）
+ * @param thousands 是否千分位分隔（省略则用全局设置）
  */
-export function formatNumber(value: number): string {
+export function formatNumber(
+  value: number,
+  decimals?: number,
+  thousands?: boolean,
+): string {
+  const dec = decimals ?? formatOptions.decimals;
+  const sep = thousands ?? formatOptions.thousands;
+
   if (value === 0) {
     return "0";
   }
   if (Number.isInteger(value)) {
-    return value.toLocaleString("en-US");
+    return sep ? value.toLocaleString("en-US") : String(value);
   }
 
-  const rounded = Math.round(value * 100) / 100;
-  const str = rounded.toFixed(2).replace(/\.?0+$/, "");
+  const factor = Math.pow(10, dec);
+  const rounded = Math.round(value * factor) / factor;
+  const str = rounded.toFixed(dec).replace(/\.?0+$/, "");
   const parts = str.split(".");
-  parts[0] = Number(parts[0]).toLocaleString("en-US");
+  parts[0] = sep ? Number(parts[0]).toLocaleString("en-US") : parts[0];
   return parts.join(".");
 }
 

@@ -1,6 +1,7 @@
 import type { Worksheet } from "../types";
 import { formatNumber } from "./useCalculator";
 import { buildLineResults } from "./useVariables";
+import { invoke } from "@tauri-apps/api/core";
 
 /**
  * 导出为 JSON 字符串
@@ -46,6 +47,18 @@ export function exportMarkdown(sheet: Worksheet): string {
   lines.push("");
   lines.push(`**总计：** ${count > 0 ? formatNumber(total) : "—"}`);
   return lines.join("\n");
+}
+
+/**
+ * 按指定编码写入文件（通过 Rust 后端）
+ * 支持 utf-8、utf-8-bom、gbk
+ */
+export async function writeFileWithEncoding(
+  path: string,
+  content: string,
+  encoding: string,
+): Promise<void> {
+  await invoke("write_file_with_encoding", { path, content, encoding });
 }
 
 /**

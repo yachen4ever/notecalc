@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from "vue";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { useI18n } from "../composables/useI18n";
 
 const props = defineProps<{
   visible: boolean;
@@ -27,6 +28,7 @@ const emit = defineEmits<{
   restartApp: [];
 }>();
 
+const { t } = useI18n();
 const inputValue = ref("");
 
 watch(
@@ -87,8 +89,8 @@ async function openLink(url: string) {
             :placeholder="message"
           />
           <div class="modal-actions">
-            <button class="modal-btn modal-btn-cancel" @click="emit('close')">取消</button>
-            <button class="modal-btn modal-btn-ok" @click="doConfirm">确定</button>
+            <button class="modal-btn modal-btn-cancel" @click="emit('close')">{{ t('cancel') }}</button>
+            <button class="modal-btn modal-btn-ok" @click="doConfirm">{{ t('ok') }}</button>
           </div>
         </template>
 
@@ -97,8 +99,8 @@ async function openLink(url: string) {
           <div class="modal-title">{{ title }}</div>
           <div class="modal-message">{{ message }}</div>
           <div class="modal-actions">
-            <button class="modal-btn modal-btn-cancel" @click="emit('close')">取消</button>
-            <button class="modal-btn modal-btn-danger" @click="emit('confirm', ''); emit('close')">删除</button>
+            <button class="modal-btn modal-btn-cancel" @click="emit('close')">{{ t('cancel') }}</button>
+            <button class="modal-btn modal-btn-danger" @click="emit('confirm', ''); emit('close')">{{ t('delete') }}</button>
           </div>
         </template>
 
@@ -110,21 +112,21 @@ async function openLink(url: string) {
             <div class="about-version">v{{ version }}</div>
             <div class="about-divider"></div>
             <div class="about-row">
-              <span class="about-label">当前版本</span>
+              <span class="about-label">{{ t('currentVersion') }}</span>
               <span class="about-value">v{{ version }}</span>
             </div>
             <div class="about-row">
-              <span class="about-label">最新版本</span>
-              <span v-if="updateStatus === 'checking'" class="about-value about-dim">检查中…</span>
-              <span v-else-if="updateStatus === 'error'" class="about-value about-dim">检查失败</span>
+              <span class="about-label">{{ t('latestVersion') }}</span>
+              <span v-if="updateStatus === 'checking'" class="about-value about-dim">{{ t('checking') }}</span>
+              <span v-else-if="updateStatus === 'error'" class="about-value about-dim">{{ t('checkFailed') }}</span>
               <span v-else-if="latestVersion" class="about-value" :class="{ 'about-new': latestVersion !== version }">
                 v{{ latestVersion }}
               </span>
               <span v-else class="about-value about-dim">—</span>
             </div>
-            <div class="about-row"><span class="about-label">开发者</span><span class="about-value">{{ author }}</span></div>
-            <div class="about-row"><span class="about-label">邮箱</span><a class="about-link" href="#" @click.prevent="openLink('mailto:' + (email ?? ''))">{{ email }}</a></div>
-            <div class="about-row"><span class="about-label">项目</span><a class="about-link" href="#" @click.prevent="openLink(repo ?? '')">GitHub</a></div>
+            <div class="about-row"><span class="about-label">{{ t('developer') }}</span><span class="about-value">{{ author }}</span></div>
+            <div class="about-row"><span class="about-label">{{ t('email') }}</span><a class="about-link" href="#" @click.prevent="openLink('mailto:' + (email ?? ''))">{{ email }}</a></div>
+            <div class="about-row"><span class="about-label">{{ t('project') }}</span><a class="about-link" href="#" @click.prevent="openLink(repo ?? '')">GitHub</a></div>
 
             <!-- 下载进度条 -->
             <div v-if="updateStatus === 'downloading'" class="about-progress">
@@ -135,7 +137,7 @@ async function openLink(url: string) {
             </div>
 
             <div class="about-divider"></div>
-            <div class="about-footer">记事本风格的跨平台计算器</div>
+            <div class="about-footer">{{ t('appDescription') }}</div>
           </div>
 
           <div class="modal-actions about-actions">
@@ -144,30 +146,30 @@ async function openLink(url: string) {
               v-if="latestVersion && latestVersion !== version && updateStatus === 'available'"
               class="modal-btn modal-btn-ok"
               @click="emit('downloadUpdate')"
-            >现在更新</button>
+            >{{ t('updateNow') }}</button>
 
             <!-- 下载中 -->
             <button
               v-else-if="updateStatus === 'downloading'"
               class="modal-btn modal-btn-ok"
               disabled
-            >下载中…</button>
+            >{{ t('downloading') }}</button>
 
             <!-- 安装中 -->
             <button
               v-else-if="updateStatus === 'installing'"
               class="modal-btn modal-btn-ok"
               disabled
-            >安装中…</button>
+            >{{ t('installing') }}</button>
 
             <!-- 下载安装完成 -->
             <button
               v-else-if="updateStatus === 'ready'"
               class="modal-btn modal-btn-ok"
               @click="emit('restartApp')"
-            >立即重启</button>
+            >{{ t('restartNow') }}</button>
 
-            <button class="modal-btn modal-btn-cancel" @click="emit('close')">关闭</button>
+            <button class="modal-btn modal-btn-cancel" @click="emit('close')">{{ t('close') }}</button>
           </div>
         </template>
       </div>

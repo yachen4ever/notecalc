@@ -1,8 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  font-family: "SF Mono", "Cascadia Code", "Menlo", "Consolas", monospace;
-  font-size: 15px;
+  /* 字体/字号由 JS 动态设置 --app-font 和 --app-font-size */
+  --app-font: "SF Mono", "Cascadia Code", "Menlo", "Consolas", monospace;
+  --app-font-size: 15px;
+  font-family: var(--app-font);
+  font-size: var(--app-font-size);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

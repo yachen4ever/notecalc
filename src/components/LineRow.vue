@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, nextTick } from "vue";
 import { tokenize, formatNumber } from "../composables/useCalculator";
 import type { LineResult } from "../types";
 
@@ -7,6 +7,7 @@ const props = defineProps<{
   index: number;
   text: string;
   result?: LineResult;
+  tabBehavior?: "navigate" | "indent";
 }>();
 
 const emit = defineEmits<{
@@ -83,11 +84,26 @@ function onKeydown(e: KeyboardEvent) {
     e.preventDefault();
     emit("move-down");
   } else if (e.key === "Tab") {
-    e.preventDefault();
-    if (e.shiftKey) {
-      emit("move-up");
+    if (props.tabBehavior === "indent") {
+      // 缩进模式：在光标位置插入两个空格
+      e.preventDefault();
+      const input = e.target as HTMLInputElement;
+      const start = input.selectionStart ?? props.text.length;
+      const end = input.selectionEnd ?? props.text.length;
+      const newText = props.text.slice(0, start) + "  " + props.text.slice(end);
+      emit("update:text", newText);
+      // 移动光标到插入位置之后
+      nextTick(() => {
+        input.selectionStart = input.selectionEnd = start + 2;
+      });
     } else {
-      emit("move-down");
+      // 导航模式：行间跳转
+      e.preventDefault();
+      if (e.shiftKey) {
+        emit("move-up");
+      } else {
+        emit("move-down");
+      }
     }
   }
 }
@@ -199,7 +215,7 @@ defineExpose({ focus });
   display: flex;
   align-items: center;
   font-family: inherit;
-  font-size: 15px;
+  font-size: var(--app-font-size);
   line-height: 32px;
   white-space: pre;
   overflow: hidden;
@@ -217,7 +233,7 @@ defineExpose({ focus });
   color: transparent;
   caret-color: var(--caret);
   font-family: inherit;
-  font-size: 15px;
+  font-size: var(--app-font-size);
   padding: 0;
   user-select: text;
   position: relative;
@@ -231,7 +247,7 @@ defineExpose({ focus });
 .line-result {
   text-align: right;
   color: var(--text-result);
-  font-size: 15px;
+  font-size: var(--app-font-size);
   font-variant-numeric: tabular-nums;
   padding-left: 16px;
   border-left: 1px solid var(--border-row);

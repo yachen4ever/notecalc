@@ -3,13 +3,33 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '700bd92e-a37e-40a8-bfb8-91cde2e991e9'
-  PropagateID: '700bd92e-a37e-40a8-bfb8-91cde2e991e9'
-  ReservedCode1: 'fcaa46dc-d887-4248-9575-b6c116a5c1e2'
-  ReservedCode2: 'fcaa46dc-d887-4248-9575-b6c116a5c1e2'
+  ProduceID: '13f79c28-0314-49a2-bb59-e118241f46a0'
+  PropagateID: '13f79c28-0314-49a2-bb59-e118241f46a0'
+  ReservedCode1: 'efad59e2-3f1f-40d5-895f-1742a5e43eaa'
+  ReservedCode2: 'efad59e2-3f1f-40d5-895f-1742a5e43eaa'
 ---
 
 # Changelog
+
+## v0.10.0 (2026-08-13)
+
+### New Features
+
+- **Settings dialog**: New ⚙ settings button in the toolbar opens a dedicated settings dialog with three sections
+  - **Appearance**: Font selection (SF Mono / Cascadia Code / JetBrains Mono / Fira Code, etc., 7 options), font size (12-20px), theme (Dark / Light / System)
+  - **Behavior**: Interface language (Chinese / English), decimal places (0-6), thousands separator (on/off), Tab key behavior (navigate / indent)
+  - **Data**: Save directory (default / custom browse), export encoding (UTF-8 BOM / GBK for Windows Excel compatibility), default export format (JSON / CSV / MD)
+  - Settings persisted to `settings.json`, restored on restart
+  - Theme toggle moved from toolbar button into settings (supports auto-switching with system theme)
+
+### Improvements
+
+- **i18n**: Full bilingual support (Chinese / English), real-time language switching via settings
+  - Covers toolbar buttons, sidebar, summary bar, about dialog, settings dialog — all UI text
+- **Number formatting enhanced**: `formatNumber` supports custom decimal places and thousands separator toggle via global formatting context
+- **CSV export encoding**: New Rust `write_file_with_encoding` command supports UTF-8 BOM and GBK encoding
+  - GBK encoding enabled via optional `encoding` feature (`encoding_rs` crate)
+- **Font/size CSS variables**: Replaced hardcoded `15px` with `--app-font` and `--app-font-size` CSS variables; setting changes apply instantly
 
 ## v0.9.1 (2026-08-13)
 

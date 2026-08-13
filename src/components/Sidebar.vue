@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import type { Worksheet } from "../types";
 import ModalDialog from "./ModalDialog.vue";
+import { useI18n } from "../composables/useI18n";
 
 defineProps<{
   sheets: Worksheet[];
@@ -14,6 +15,8 @@ const emit = defineEmits<{
   "rename-sheet": [id: string, name: string];
   "delete-sheet": [id: string];
 }>();
+
+const { t } = useI18n();
 
 // ===== 自定义弹窗状态 =====
 const modalVisible = ref(false);
@@ -34,8 +37,8 @@ function onSelect(id: string) {
 
 function onRename(id: string, currentName: string) {
   modalMode.value = "prompt";
-  modalTitle.value = "重命名工作表";
-  modalMessage.value = "请输入新名称";
+  modalTitle.value = t("renameSheet");
+  modalMessage.value = t("enterNewName");
   modalDefaultValue.value = currentName;
   pendingAction.value = (newName: string) => {
     emit("rename-sheet", id, newName);
@@ -45,8 +48,8 @@ function onRename(id: string, currentName: string) {
 
 function onDelete(id: string, name: string) {
   modalMode.value = "confirm";
-  modalTitle.value = "删除工作表";
-  modalMessage.value = `确定删除工作表"${name}"吗？`;
+  modalTitle.value = t("deleteSheet");
+  modalMessage.value = `${t("confirmDeleteSheet")}"${name}"?`;
   modalDefaultValue.value = "";
   pendingAction.value = () => {
     emit("delete-sheet", id);
@@ -70,8 +73,8 @@ function onModalClose() {
 <template>
   <aside class="sidebar">
     <div class="sidebar-header">
-      <span class="sidebar-title">工作表</span>
-      <button class="btn-add" @click="onAdd" title="新增工作表">+</button>
+      <span class="sidebar-title">{{ t("sheets") }}</span>
+      <button class="btn-add" @click="onAdd" :title="t('addSheet')">+</button>
     </div>
     <ul class="sheet-list">
       <li
@@ -85,12 +88,12 @@ function onModalClose() {
         <button
           class="btn-delete"
           @click.stop="onDelete(sheet.id, sheet.name)"
-          title="删除"
+          :title="t('delete')"
         >×</button>
       </li>
     </ul>
     <div class="sidebar-footer">
-      <span class="hint">双击重命名</span>
+      <span class="hint">{{ t("doubleClickHint") }}</span>
     </div>
 
     <!-- 自定义弹窗 -->

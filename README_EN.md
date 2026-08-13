@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'ee264391-98ff-4293-b99e-eb844b79ed80'
-  PropagateID: 'ee264391-98ff-4293-b99e-eb844b79ed80'
-  ReservedCode1: '2003d11c-4311-478c-8ec8-b31650b93e99'
-  ReservedCode2: '2003d11c-4311-478c-8ec8-b31650b93e99'
+  ProduceID: '5e02fb72-f18d-45f3-b59c-3077f3c458b3'
+  PropagateID: '5e02fb72-f18d-45f3-b59c-3077f3c458b3'
+  ReservedCode1: '08cb3080-84f5-4dfb-9fe0-afb2589de2e7'
+  ReservedCode2: '08cb3080-84f5-4dfb-9fe0-afb2589de2e7'
 ---
 
 # notecalc
@@ -25,7 +25,17 @@ A notepad-style cross-platform calculator, inspired by Soulver / Numi. Type calc
 - Arithmetic + parentheses (expr-eval engine)
 - Syntax highlighting — numbers in blue, operators in cyan, variables in purple, assignment in orange, plain text in gray
 - Right-aligned results with automatic sum of all valid lines at the bottom
-- Light / dark theme toggle
+- Light / dark / system theme (toggle in settings)
+
+### Settings & Personalization
+- Font selection (SF Mono / Cascadia Code / JetBrains Mono, etc., 7 options)
+- Font size adjustment (12-20px)
+- Interface language switch (Chinese / English)
+- Adjustable decimal places (0-6)
+- Thousands separator toggle
+- Tab key behavior (navigate / indent)
+- Export encoding choice (UTF-8 BOM / GBK for Windows Excel compatibility)
+- Default export format setting (JSON / CSV / Markdown)
 
 ### Semantic Analysis
 - Chinese discounts: `打8折` (20% off), `半价` (half price), `满200减50` (spend 200 save 50), `涨10%` (up 10%), `降10%` (down 10%)
@@ -37,7 +47,7 @@ A notepad-style cross-platform calculator, inspired by Soulver / Numi. Type calc
 - Number extraction & sum: extract numbers from text and add them up (e.g. "lunch 340 taxi 86" → 426)
 - Chinese large number units: `1万` → 10000, `3.5亿` → 350000000, `2万5` → 25000
 - Rule-based engine — deterministic, fast, offline, no LLM required
-- Decimals default to 2 places with trailing zeros stripped (3.14, 3.1, 3)
+- Decimals default to 2 places (adjustable 0-6 in settings) with trailing zeros stripped (3.14, 3.1, 3)
 
 ### Variables & References
 - Line references: `l1` / `line2` to reference other lines' results
@@ -100,6 +110,7 @@ Get prebuilt binaries from [Releases](https://github.com/yachen4ever/notecalc/re
 - **v0.8** ✅ Undo/Redo (Ctrl+Z / Ctrl+Shift+Z), text input debounce, focus restoration
 - **v0.9** ✅ Auto-update: silent check on launch + manual check, cross-platform auto-update with Ed25519 signature verification
 - **v0.9.1** ✅ Merged update check into About dialog, showing current vs latest version comparison with in-dialog update
+- **v0.10** ✅ Settings dialog (font/font size/theme/language/decimal places/thousands separator/Tab behavior/save dir/export encoding/default export format), Chinese-English i18n
 
 ## License
 

@@ -44,3 +44,34 @@ export interface WorksheetData {
   sheets: Worksheet[];
   active_sheet_id: string;
 }
+
+// ===== 设置 =====
+
+export type ThemeMode = "dark" | "light" | "system";
+export type Language = "zh" | "en";
+export type TabBehavior = "navigate" | "indent";
+export type ExportEncoding = "utf-8" | "gbk";
+export type ExportFormat = "json" | "csv" | "md";
+
+export interface AppSettings {
+  /** CSS font-family 值（含 fallback 列表） */
+  font: string;
+  /** 字号 px 值 (12-20) */
+  fontSize: number;
+  /** 主题模式 */
+  theme: ThemeMode;
+  /** 界面语言 */
+  language: Language;
+  /** 小数位数 (0-6) */
+  decimalPlaces: number;
+  /** 千分位分隔符 */
+  thousandsSeparator: boolean;
+  /** Tab 键行为 */
+  tabBehavior: TabBehavior;
+  /** 自定义数据目录（空串=默认 app_data_dir） */
+  dataDir: string;
+  /** CSV 导出编码 */
+  exportEncoding: ExportEncoding;
+  /** 默认导出格式 */
+  defaultExportFormat: ExportFormat;
+}

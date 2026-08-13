@@ -3,13 +3,33 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'a35b9861-aacb-434e-b0b2-4ee473e808f2'
-  PropagateID: 'a35b9861-aacb-434e-b0b2-4ee473e808f2'
-  ReservedCode1: '37c24530-d6b9-46ae-bfec-bdb1d709f669'
-  ReservedCode2: '37c24530-d6b9-46ae-bfec-bdb1d709f669'
+  ProduceID: '8031559e-029a-4ab1-b854-c1cb51f9d761'
+  PropagateID: '8031559e-029a-4ab1-b854-c1cb51f9d761'
+  ReservedCode1: '0b3eaeda-d4ec-47e3-b233-7fef7b8a4c44'
+  ReservedCode2: '0b3eaeda-d4ec-47e3-b233-7fef7b8a4c44'
 ---
 
 # 更新日志
+
+## v0.10.0 (2026-08-13)
+
+### 新功能
+
+- **设置界面**：标题栏新增⚙设置按钮，打开独立设置弹窗，包含三大分区
+  - **外观**：字体选择（SF Mono / Cascadia Code / JetBrains Mono / Fira Code 等 7 种）、字号（12-20px）、主题（暗色 / 浅色 / 跟随系统）
+  - **行为**：界面语言（中文 / English）、小数位数（0-6 位可调）、千分位分隔符（开 / 关）、Tab 键行为（行间跳转 / 缩进）
+  - **数据**：保存目录（默认 / 自定义浏览选择）、导出编码（UTF-8 带 BOM / GBK，解决 Windows Excel 中文乱码）、默认导出格式（JSON / CSV / MD）
+  - 设置持久化存储（settings.json），重启后保持
+  - 主题切换从标题栏按钮移入设置（支持跟随系统主题自动切换）
+
+### 改进
+
+- **i18n 国际化**：全界面支持中英双语，通过设置切换语言实时生效
+  - 覆盖标题栏按钮、侧边栏、汇总栏、关于对话框、设置对话框所有文案
+- **数字格式化增强**：`formatNumber` 支持自定义小数位数和千分位开关，全局格式化上下文自动应用
+- **CSV 导出编码**：新增 Rust 后端 `write_file_with_encoding` 命令，支持 UTF-8 BOM 和 GBK 编码写入
+  - GBK 编码通过可选 feature `encoding` 启用（`encoding_rs` crate）
+- **字体/字号 CSS 变量化**：从硬编码 `15px` 改为 `--app-font` 和 `--app-font-size` CSS 变量，设置变更即时生效
 
 ## v0.9.1 (2026-08-13)
 

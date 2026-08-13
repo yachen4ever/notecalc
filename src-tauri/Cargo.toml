@@ -27,3 +27,9 @@ tauri-plugin-fs = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 
+# 可选：GBK 编码支持（CSV 导出给 Windows Excel）
+encoding_rs = { version = "0.8", optional = true }
+
+[features]
+encoding = ["dep:encoding_rs"]
+

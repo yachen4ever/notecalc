@@ -1,20 +1,23 @@
 <script setup lang="ts">
 import { formatNumber } from "../composables/useCalculator";
+import { useI18n } from "../composables/useI18n";
 
 defineProps<{
   total: number | null;
   count: number;
 }>();
+
+const { t } = useI18n();
 </script>
 
 <template>
   <div class="summary-bar">
     <div class="summary-info">
-      <span v-if="count > 0">{{ count }} 项</span>
-      <span v-else>无计算</span>
+      <span v-if="count > 0">{{ count }} {{ t("items") }}</span>
+      <span v-else>{{ t("noCalculations") }}</span>
     </div>
     <div class="summary-total">
-      <span class="summary-label">总计</span>
+      <span class="summary-label">{{ t("total") }}</span>
       <span class="summary-value">{{ total !== null ? formatNumber(total) : "—" }}</span>
     </div>
   </div>
