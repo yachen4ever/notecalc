@@ -3,13 +3,24 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'd51fb5fd-298a-4dd2-8f5b-ebd11a590aa7'
-  PropagateID: 'd51fb5fd-298a-4dd2-8f5b-ebd11a590aa7'
-  ReservedCode1: 'f5493875-c70b-4560-8bc8-64fff1261252'
-  ReservedCode2: 'f5493875-c70b-4560-8bc8-64fff1261252'
+  ProduceID: 'a35b9861-aacb-434e-b0b2-4ee473e808f2'
+  PropagateID: 'a35b9861-aacb-434e-b0b2-4ee473e808f2'
+  ReservedCode1: '37c24530-d6b9-46ae-bfec-bdb1d709f669'
+  ReservedCode2: '37c24530-d6b9-46ae-bfec-bdb1d709f669'
 ---
 
 # 更新日志
+
+## v0.9.1 (2026-08-13)
+
+### 改进
+
+- **检查更新合并到关于对话框**：移除标题栏独立的"检查更新"按钮，更新功能收入"关于"弹窗
+  - 关于对话框同时显示当前版本和最新版本，直观对比
+  - 有新版本时，最新版本号高亮，底部出现"现在更新"按钮
+  - 下载进度条直接在关于对话框内展示，完成后变"立即重启"按钮
+  - 打开关于时自动检查更新（如尚未检查过）
+  - 启动后 3 秒静默检查保持不变
 
 ## v0.9.0 (2026-08-12)
 

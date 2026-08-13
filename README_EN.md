@@ -3,10 +3,10 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: '68ced646-59c0-4790-b195-74e26d16e572'
-  PropagateID: '68ced646-59c0-4790-b195-74e26d16e572'
-  ReservedCode1: '828281f3-040f-4862-b561-5081145e22ed'
-  ReservedCode2: '828281f3-040f-4862-b561-5081145e22ed'
+  ProduceID: 'ee264391-98ff-4293-b99e-eb844b79ed80'
+  PropagateID: 'ee264391-98ff-4293-b99e-eb844b79ed80'
+  ReservedCode1: '2003d11c-4311-478c-8ec8-b31650b93e99'
+  ReservedCode2: '2003d11c-4311-478c-8ec8-b31650b93e99'
 ---
 
 # notecalc
@@ -99,6 +99,7 @@ Get prebuilt binaries from [Releases](https://github.com/yachen4ever/notecalc/re
 - **v0.7** ✅ Compound unit recognition (1天20小时48分钟→1.87 days), unit switcher UI, single-unit switching
 - **v0.8** ✅ Undo/Redo (Ctrl+Z / Ctrl+Shift+Z), text input debounce, focus restoration
 - **v0.9** ✅ Auto-update: silent check on launch + manual check, cross-platform auto-update with Ed25519 signature verification
+- **v0.9.1** ✅ Merged update check into About dialog, showing current vs latest version comparison with in-dialog update
 
 ## License
 

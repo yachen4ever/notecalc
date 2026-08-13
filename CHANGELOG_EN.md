@@ -3,13 +3,24 @@ AIGC:
   ContentProducer: '001191110102MAD55U9H0F10002'
   ContentPropagator: '001191110102MAD55U9H0F10002'
   Label: '1'
-  ProduceID: 'aabea98f-f391-458a-a57c-96dbde3d3581'
-  PropagateID: 'aabea98f-f391-458a-a57c-96dbde3d3581'
-  ReservedCode1: '87577c54-9b0b-427d-afdb-bedb1b5f6772'
-  ReservedCode2: '87577c54-9b0b-427d-afdb-bedb1b5f6772'
+  ProduceID: '700bd92e-a37e-40a8-bfb8-91cde2e991e9'
+  PropagateID: '700bd92e-a37e-40a8-bfb8-91cde2e991e9'
+  ReservedCode1: 'fcaa46dc-d887-4248-9575-b6c116a5c1e2'
+  ReservedCode2: 'fcaa46dc-d887-4248-9575-b6c116a5c1e2'
 ---
 
 # Changelog
+
+## v0.9.1 (2026-08-13)
+
+### Improvements
+
+- **Merged update check into About dialog**: Removed standalone "Check for Updates" button from toolbar; update functionality now lives in the About dialog
+  - About dialog shows current version and latest version side by side for easy comparison
+  - When a newer version is available, latest version is highlighted and an "Update Now" button appears
+  - Download progress bar displayed inline within About dialog; changes to "Restart Now" after completion
+  - Automatically checks for updates when About is opened (if not checked yet)
+  - Startup silent check (3s delay) remains unchanged
 
 ## v0.9.0 (2026-08-12)
 
