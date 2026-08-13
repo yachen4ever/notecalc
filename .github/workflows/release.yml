@@ -85,6 +85,10 @@ jobs:
             target: aarch64-apple-darwin
             label: macos-arm64
             updater_target: darwin-aarch64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            label: macos-amd64
+            updater_target: darwin-x86_64
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -278,6 +282,8 @@ jobs:
           for f in sigs/*.sig; do
             if [[ "$f" == *"macos-arm64"* ]]; then
               SIGS[darwin-aarch64]=$(cat "$f")
+            elif [[ "$f" == *"macos-amd64"* ]]; then
+              SIGS[darwin-x86_64]=$(cat "$f")
             elif [[ "$f" == *"windows-x64"* ]]; then
               SIGS[windows-x86_64]=$(cat "$f")
             elif [[ "$f" == *"windows-x86"* ]]; then
@@ -319,6 +325,7 @@ jobs:
           platforms = {}
           url_map = {
               'darwin-aarch64': f'{gh_base}/notecalc-{version}-macos-arm64.app.tar.gz',
+              'darwin-x86_64': f'{gh_base}/notecalc-{version}-macos-amd64.app.tar.gz',
               'windows-x86_64': f'{gh_base}/notecalc-{version}-windows-x64-setup.exe',
               'windows-i686': f'{gh_base}/notecalc-{version}-windows-x86-setup.exe',
               'linux-x86_64': f'{gh_base}/notecalc-{version}-linux-amd64.AppImage',
