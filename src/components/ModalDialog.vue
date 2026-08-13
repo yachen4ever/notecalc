@@ -12,11 +12,19 @@ const props = defineProps<{
   author?: string;
   email?: string;
   repo?: string;
+  // 更新相关
+  latestVersion?: string;
+  updateStatus?: string;
+  updateProgress?: number;
+  updateErrorMsg?: string;
 }>();
 
 const emit = defineEmits<{
   close: [];
   confirm: [value: string];
+  checkUpdate: [];
+  downloadUpdate: [];
+  restartApp: [];
 }>();
 
 const inputValue = ref("");
@@ -101,14 +109,65 @@ async function openLink(url: string) {
             <div class="about-name">NoteCalc</div>
             <div class="about-version">v{{ version }}</div>
             <div class="about-divider"></div>
+            <div class="about-row">
+              <span class="about-label">当前版本</span>
+              <span class="about-value">v{{ version }}</span>
+            </div>
+            <div class="about-row">
+              <span class="about-label">最新版本</span>
+              <span v-if="updateStatus === 'checking'" class="about-value about-dim">检查中…</span>
+              <span v-else-if="updateStatus === 'error'" class="about-value about-dim">检查失败</span>
+              <span v-else-if="latestVersion" class="about-value" :class="{ 'about-new': latestVersion !== version }">
+                v{{ latestVersion }}
+              </span>
+              <span v-else class="about-value about-dim">—</span>
+            </div>
             <div class="about-row"><span class="about-label">开发者</span><span class="about-value">{{ author }}</span></div>
             <div class="about-row"><span class="about-label">邮箱</span><a class="about-link" href="#" @click.prevent="openLink('mailto:' + (email ?? ''))">{{ email }}</a></div>
             <div class="about-row"><span class="about-label">项目</span><a class="about-link" href="#" @click.prevent="openLink(repo ?? '')">GitHub</a></div>
+
+            <!-- 下载进度条 -->
+            <div v-if="updateStatus === 'downloading'" class="about-progress">
+              <div class="about-progress-bar">
+                <div class="about-progress-fill" :style="{ width: (updateProgress ?? 0) + '%' }"></div>
+              </div>
+              <div class="about-progress-text">{{ updateProgress ?? 0 }}%</div>
+            </div>
+
             <div class="about-divider"></div>
             <div class="about-footer">记事本风格的跨平台计算器</div>
           </div>
-          <div class="modal-actions">
-            <button class="modal-btn modal-btn-ok" @click="emit('close')">好</button>
+
+          <div class="modal-actions about-actions">
+            <!-- 有新版本：显示更新按钮 -->
+            <button
+              v-if="latestVersion && latestVersion !== version && updateStatus === 'available'"
+              class="modal-btn modal-btn-ok"
+              @click="emit('downloadUpdate')"
+            >现在更新</button>
+
+            <!-- 下载中 -->
+            <button
+              v-else-if="updateStatus === 'downloading'"
+              class="modal-btn modal-btn-ok"
+              disabled
+            >下载中…</button>
+
+            <!-- 安装中 -->
+            <button
+              v-else-if="updateStatus === 'installing'"
+              class="modal-btn modal-btn-ok"
+              disabled
+            >安装中…</button>
+
+            <!-- 下载安装完成 -->
+            <button
+              v-else-if="updateStatus === 'ready'"
+              class="modal-btn modal-btn-ok"
+              @click="emit('restartApp')"
+            >立即重启</button>
+
+            <button class="modal-btn modal-btn-cancel" @click="emit('close')">关闭</button>
           </div>
         </template>
       </div>
@@ -188,6 +247,10 @@ async function openLink(url: string) {
   gap: 8px;
 }
 
+.about-actions {
+  align-items: center;
+}
+
 .modal-btn {
   padding: 6px 16px;
   font-size: 12px;
@@ -216,6 +279,11 @@ async function openLink(url: string) {
 
 .modal-btn-ok:hover {
   opacity: 0.85;
+}
+
+.modal-btn-ok:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .modal-btn-danger {
@@ -275,6 +343,15 @@ async function openLink(url: string) {
   color: var(--text-primary);
 }
 
+.about-dim {
+  color: var(--text-dim);
+}
+
+.about-new {
+  color: var(--accent);
+  font-weight: 500;
+}
+
 .about-link {
   color: var(--accent);
   text-decoration: none;
@@ -287,5 +364,33 @@ async function openLink(url: string) {
 .about-footer {
   font-size: 11px;
   color: var(--text-dim);
+}
+
+/* 下载进度条 */
+.about-progress {
+  margin-top: 10px;
+  text-align: left;
+}
+
+.about-progress-bar {
+  width: 100%;
+  height: 5px;
+  background: var(--bg-body);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.about-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.2s ease-out;
+}
+
+.about-progress-text {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+  margin-top: 4px;
 }
 </style>

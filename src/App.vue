@@ -230,9 +230,7 @@ async function doImport() {
 
 // ===== 关于对话框 + 检查更新 =====
 const aboutVisible = ref(false);
-// APP_VERSION 从 useVersion.ts 统一管理
 
-// ===== 检查更新 =====
 const {
   status: updateStatus,
   updateInfo,
@@ -244,9 +242,6 @@ const {
   reset: resetUpdate,
 } = useUpdater();
 
-// 更新弹窗
-const updateDialogVisible = ref(false);
-
 // 静默自动检查（启动后 3 秒）
 onMounted(() => {
   setTimeout(() => {
@@ -254,19 +249,20 @@ onMounted(() => {
   }, 3000);
 });
 
-// 监听更新状态
-watch(updateStatus, (s) => {
-  if (s === "available") {
-    // 有更新，弹出更新对话框
-    updateDialogVisible.value = true;
-  } else if (s === "ready") {
-    // 下载安装完成，等待用户确认重启
+// 打开关于对话框时，如果没有检查过更新，自动检查
+function openAbout() {
+  aboutVisible.value = true;
+  if (updateStatus.value === "idle") {
+    checkForUpdate(false);
   }
-});
+}
 
-function handleCheckUpdateClick() {
-  // 手动检查，非静默
-  checkForUpdate(false);
+function handleCloseAbout() {
+  aboutVisible.value = false;
+  // 如果不是下载/安装中，重置状态（下次打开重新检查）
+  if (updateStatus.value !== "downloading" && updateStatus.value !== "installing" && updateStatus.value !== "ready") {
+    resetUpdate();
+  }
 }
 
 async function handleDownloadUpdate() {
@@ -274,18 +270,8 @@ async function handleDownloadUpdate() {
 }
 
 async function handleRestartNow() {
-  updateDialogVisible.value = false;
+  aboutVisible.value = false;
   await restartApp();
-}
-
-function handleCloseUpdateDialog() {
-  updateDialogVisible.value = false;
-  resetUpdate();
-}
-
-// 打开关于对话框时，如果正在检查更新不干扰
-function openAbout() {
-  aboutVisible.value = true;
 }
 
 // ===== Undo / Redo =====
@@ -413,9 +399,6 @@ onUnmounted(() => {
           <span class="title-divider"></span>
           <button class="title-btn" @click="doExport" title="导出（JSON/CSV/MD）">导出</button>
           <button class="title-btn" @click="doImport" title="导入 JSON">导入</button>
-          <button class="title-btn" @click="handleCheckUpdateClick" title="检查更新" :disabled="updateStatus === 'checking' || updateStatus === 'downloading' || updateStatus === 'installing'">
-            {{ updateStatus === 'checking' ? '检查中…' : updateStatus === 'downloading' ? updateProgress + '%' : updateStatus === 'installing' ? '安装中…' : '检查更新' }}
-          </button>
           <button class="theme-toggle" @click="toggleTheme" title="切换主题">
             {{ theme === "dark" ? "\u2600" : "\u263d" }}
           </button>
@@ -423,84 +406,22 @@ onUnmounted(() => {
         </div>
       </header>
 
-      <!-- 关于弹窗 -->
+      <!-- 关于弹窗（含检查更新） -->
       <ModalDialog
         :visible="aboutVisible"
         mode="about"
         :version="APP_VERSION"
+        :latest-version="updateInfo?.version"
+        :update-status="updateStatus"
+        :update-progress="updateProgress"
+        :error-msg="updateErrorMsg"
         author="yachen"
         email="bbwang@163.com"
         repo="https://github.com/yachen4ever/notecalc"
-        @close="aboutVisible = false"
-        @confirm="aboutVisible = false"
+        @close="handleCloseAbout"
+        @download-update="handleDownloadUpdate"
+        @restart-app="handleRestartNow"
       />
-
-      <!-- 更新弹窗 -->
-      <Teleport to="body">
-        <div v-if="updateDialogVisible" class="modal-overlay" @click.self="handleCloseUpdateDialog">
-          <div class="modal-box update-dialog" role="dialog" aria-label="检查更新">
-            <!-- 有更新 -->
-            <template v-if="updateStatus === 'available'">
-              <div class="update-title">发现新版本</div>
-              <div class="update-version">v{{ updateInfo?.version }}</div>
-              <div v-if="updateInfo?.body" class="update-body">{{ updateInfo.body }}</div>
-              <div class="update-hint">当前版本 v{{ APP_VERSION }}</div>
-              <div class="modal-actions">
-                <button class="modal-btn modal-btn-cancel" @click="handleCloseUpdateDialog">稍后再说</button>
-                <button class="modal-btn modal-btn-ok" @click="handleDownloadUpdate">立即更新</button>
-              </div>
-            </template>
-
-            <!-- 下载中 -->
-            <template v-else-if="updateStatus === 'downloading'">
-              <div class="update-title">正在下载更新…</div>
-              <div class="update-progress-bar">
-                <div class="update-progress-fill" :style="{ width: updateProgress + '%' }"></div>
-              </div>
-              <div class="update-hint">{{ updateProgress }}%</div>
-            </template>
-
-            <!-- 安装中 -->
-            <template v-else-if="updateStatus === 'installing'">
-      <div class="update-title">正在安装更新…</div>
-              <div class="update-hint">请勿关闭应用</div>
-            </template>
-
-            <!-- 下载安装完成 -->
-            <template v-else-if="updateStatus === 'ready'">
-              <div class="update-title">更新已就绪</div>
-              <div class="update-hint">重启应用以完成安装</div>
-              <div class="modal-actions">
-                <button class="modal-btn modal-btn-cancel" @click="handleCloseUpdateDialog">稍后重启</button>
-                <button class="modal-btn modal-btn-ok" @click="handleRestartNow">立即重启</button>
-              </div>
-            </template>
-
-            <!-- 无更新 -->
-            <template v-else-if="updateStatus === 'not-available'">
-              <div class="update-title">已是最新版本</div>
-              <div class="update-hint">当前版本 v{{ APP_VERSION }}</div>
-              <div class="modal-actions">
-                <button class="modal-btn modal-btn-ok" @click="handleCloseUpdateDialog">好</button>
-              </div>
-            </template>
-
-            <!-- 检查中 -->
-            <template v-else-if="updateStatus === 'checking'">
-              <div class="update-title">正在检查更新…</div>
-            </template>
-
-            <!-- 错误 -->
-            <template v-else-if="updateStatus === 'error'">
-              <div class="update-title">检查更新失败</div>
-              <div class="update-error">{{ updateErrorMsg || '网络错误，请稍后重试' }}</div>
-              <div class="modal-actions">
-                <button class="modal-btn modal-btn-ok" @click="handleCloseUpdateDialog">好</button>
-              </div>
-            </template>
-          </div>
-        </div>
-      </Teleport>
 
       <!-- 工作区 -->
       <main class="worksheet">
@@ -630,128 +551,5 @@ onUnmounted(() => {
 
 footer {
   flex-shrink: 0;
-}
-
-/* ===== 更新弹窗 ===== */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  animation: fadeIn 0.15s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.update-dialog {
-  min-width: 340px;
-  max-width: 420px;
-  background: var(--bg-titlebar);
-  border: 1px solid var(--border-titlebar);
-  border-radius: 10px;
-  padding: 20px 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  animation: slideUp 0.15s ease-out;
-}
-
-@keyframes slideUp {
-  from { transform: translateY(8px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.update-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 8px;
-}
-
-.update-version {
-  font-size: 13px;
-  color: var(--accent);
-  font-weight: 500;
-  margin-bottom: 8px;
-}
-
-.update-body {
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.5;
-  max-height: 120px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  margin-bottom: 8px;
-}
-
-.update-hint {
-  font-size: 11px;
-  color: var(--text-dim);
-  margin-top: 4px;
-}
-
-.update-error {
-  font-size: 12px;
-  color: #ef4444;
-  margin-bottom: 12px;
-  line-height: 1.5;
-}
-
-.update-progress-bar {
-  width: 100%;
-  height: 6px;
-  background: var(--bg-body);
-  border-radius: 3px;
-  overflow: hidden;
-  margin: 12px 0 6px;
-}
-
-.update-progress-fill {
-  height: 100%;
-  background: var(--accent);
-  border-radius: 3px;
-  transition: width 0.2s ease-out;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.modal-btn {
-  padding: 6px 16px;
-  font-size: 12px;
-  font-family: inherit;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.1s, opacity 0.1s;
-  font-weight: 500;
-}
-
-.modal-btn-cancel {
-  background: var(--bg-row-hover);
-  color: var(--text-muted);
-}
-
-.modal-btn-cancel:hover {
-  background: var(--border-row);
-  color: var(--text-primary);
-}
-
-.modal-btn-ok {
-  background: var(--accent);
-  color: #000;
-}
-
-.modal-btn-ok:hover {
-  opacity: 0.85;
 }
 </style>
