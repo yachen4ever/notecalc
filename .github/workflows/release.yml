@@ -362,6 +362,10 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "chore: update latest.json for ${{ steps.ver.outputs.tag }}"
+            # Fetch latest main and rebase to avoid non-fast-forward rejection
+            # (main may have advanced since the tag was created)
+            git fetch origin main
+            git rebase origin/main || true
             # Push from detached HEAD to remote main branch
             git push origin HEAD:main
             # Sync to Gitee (for raw file access used by updater endpoint)
