@@ -21,6 +21,8 @@ const emit = defineEmits<{
 const inputRef = ref<HTMLInputElement | null>(null);
 const unitMenuOpen = ref(false);
 const activeUnitIndex = ref(0);
+// 用户是否手动选择过单位（日期差值场景：默认显示普通减法结果，选择后才显示差值）
+const unitManuallySelected = ref(false);
 
 // 计算结果（V4：由父组件传入，支持变量引用）
 const lineResult = computed<LineResult>(() => props.result ?? { result: null, text: "" });
@@ -35,11 +37,11 @@ const hasUnitSwitcher = computed(() => !!lineResult.value.unitInfo);
 const displayText = computed(() => {
   const r = lineResult.value;
   if (!r.unitInfo) return r.text;
-  // 如果用户没有手动切换，用默认的 text
-  if (!unitMenuOpen.value && activeUnitIndex.value === r.unitInfo.defaultUnitIndex) {
+  // 用户未手动选择时：默认显示 r.text（普通结果），而非 unitInfo 的默认单位
+  if (!unitManuallySelected.value) {
     return r.text;
   }
-  // 用 activeUnitIndex 对应的单位计算
+  // 用户手动选择后：用 activeUnitIndex 对应的单位计算
   const unit = r.unitInfo.units[activeUnitIndex.value];
   const value = unit.fromBase
     ? unit.fromBase(r.unitInfo.baseValue)
@@ -47,9 +49,9 @@ const displayText = computed(() => {
   return `${formatNumber(value)} ${unit.label}`;
 });
 
-// 初始化 activeUnitIndex
+// 初始化 activeUnitIndex（仅在用户未手动选择时）
 function initActiveUnit() {
-  if (lineResult.value.unitInfo) {
+  if (lineResult.value.unitInfo && !unitManuallySelected.value) {
     activeUnitIndex.value = lineResult.value.unitInfo.defaultUnitIndex;
   }
 }
@@ -57,6 +59,7 @@ function initActiveUnit() {
 // 切换单位
 function switchUnit(index: number) {
   activeUnitIndex.value = index;
+  unitManuallySelected.value = true;
   unitMenuOpen.value = false;
 }
 

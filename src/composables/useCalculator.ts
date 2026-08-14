@@ -1,5 +1,5 @@
 import { Parser } from "expr-eval";
-import type { LineResult } from "../types";
+import type { LineResult, UnitInfo, UnitOption } from "../types";
 import { rules } from "./rules/engine";
 import { numberExtractionRule } from "./rules/numberExtraction";
 import { chineseDiscountRule } from "./rules/chineseDiscount";
@@ -62,6 +62,15 @@ export function calculateLine(text: string): LineResult {
     if (typeof value === "number" && !isNaN(value) && isFinite(value)) {
       // -0 → 0
       const normalized = value === 0 ? 0 : value;
+      // 日期差值检测：YYYYMMDD - YYYYMMDD → 附加时间差值单位（默认仍显示普通减法结果）
+      const dateUnitInfo = tryDateDiff(expanded);
+      if (dateUnitInfo) {
+        return {
+          result: normalized,
+          text: formatNumber(normalized, formatOptions.decimals, formatOptions.thousands),
+          unitInfo: dateUnitInfo,
+        };
+      }
       return { result: normalized, text: formatNumber(normalized, formatOptions.decimals, formatOptions.thousands) };
     }
   } catch {
@@ -77,6 +86,66 @@ export function calculateLine(text: string): LineResult {
   }
 
   return { result: null, text: "" };
+}
+
+/**
+ * 日期差值识别：YYYYMMDD - YYYYMMDD → 天数差值
+ *
+ * 设计原则：
+ * - 默认行为保持普通减法（如 20251001-20240101 默认显示 600）
+ * - 同时附加时间差值单位（天/小时/分钟/秒），用户可在右侧单位切换器中查看
+ * - 只识别 8 位纯数字且是合法日期（20240101、20251001）
+ * - 非法日期（如 20241332、99999999）不触发，保持普通减法
+ * - 只处理单个减法（两个日期相减），复合表达式（含 +/- 多个）不触发
+ */
+function tryDateDiff(text: string): UnitInfo | null {
+  const trimmed = text.trim();
+  // 匹配：8位日期 - 8位日期（可带空格）
+  const m = trimmed.match(/^(\d{8})\s*-\s*(\d{8})$/);
+  if (!m) return null;
+
+  const d1 = parseYmd(m[1]);
+  const d2 = parseYmd(m[2]);
+  if (!d1 || !d2) return null;
+
+  // 计算差值（毫秒 → 秒）
+  const diffMs = d1.getTime() - d2.getTime();
+  if (isNaN(diffMs)) return null;
+  const diffSeconds = Math.round(diffMs / 1000);
+
+  // 时间差值单位（基准：秒）
+  const unitOptions: UnitOption[] = [
+    { label: "天", factor: 86400 },
+    { label: "小时", factor: 3600 },
+    { label: "分钟", factor: 60 },
+    { label: "秒", factor: 1 },
+  ];
+  // 默认单位：天（日期差值的自然展示单位）
+  const defaultUnitIndex = 0;
+
+  const unitInfo: UnitInfo = {
+    category: "time",
+    baseValue: diffSeconds,
+    units: unitOptions,
+    defaultUnitIndex,
+  };
+
+  return unitInfo;
+}
+
+/**
+ * 解析 8 位日期字符串（YYYYMMDD）为 Date
+ * 校验合法性：月份 01-12、日期 01-31、真实存在（如 20240230 会归一化到 3月1日 → 拒绝）
+ */
+function parseYmd(s: string): Date | null {
+  const y = Number(s.slice(0, 4));
+  const mo = Number(s.slice(4, 6));
+  const d = Number(s.slice(6, 8));
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  const date = new Date(y, mo - 1, d);
+  // 校验归一化（20240230 → 3月1日，与输入不一致 → 非法）
+  if (date.getFullYear() !== y || date.getMonth() !== mo - 1 || date.getDate() !== d) return null;
+  return date;
 }
 
 /**

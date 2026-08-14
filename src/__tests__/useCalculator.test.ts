@@ -131,6 +131,94 @@ describe("formatNumber", () => {
   });
 });
 
+// ============ 日期差值识别 (YYYYMMDD - YYYYMMDD) ============
+
+describe("日期差值识别 (date diff)", () => {
+  it("20251001-20240101 → 默认显示普通减法 10900，附带日期差值单位", () => {
+    const result = calculateLine("20251001-20240101");
+    // 普通减法结果保持不变（20251001 - 20240101 = 10900）
+    expect(result.result).toBe(10900);
+    expect(result.text).toBe("10,900");
+    // 附带日期差值单位
+    expect(result.unitInfo).toBeDefined();
+    expect(result.unitInfo!.category).toBe("time");
+    // baseValue 是差值秒数：639 天 = 55,209,600 秒
+    expect(result.unitInfo!.baseValue).toBe(639 * 86400);
+    // 默认单位是天
+    expect(result.unitInfo!.defaultUnitIndex).toBe(0);
+    expect(result.unitInfo!.units[0].label).toBe("天");
+  });
+
+  it("日期差值支持空格写法 20240101 - 20230101", () => {
+    const result = calculateLine("20240101 - 20230101");
+    expect(result.result).toBe(10000); // 普通减法
+    expect(result.unitInfo).toBeDefined();
+    // 365 天差值（2023 不是闰年）
+    expect(result.unitInfo!.baseValue).toBe(365 * 86400);
+  });
+
+  it("日期差值 → 反向相减为负数", () => {
+    const result = calculateLine("20230101-20240101");
+    expect(result.result).toBe(-10000);
+    expect(result.unitInfo).toBeDefined();
+    expect(result.unitInfo!.baseValue).toBe(-365 * 86400);
+  });
+
+  it("非法日期不触发（99999999 不是合法日期）", () => {
+    const result = calculateLine("99999999-20240101");
+    expect(result.result).toBe(99999999 - 20240101);
+    expect(result.unitInfo).toBeUndefined();
+  });
+
+  it("非法月份不触发（20241332 月 13）", () => {
+    const result = calculateLine("20241332-20240101");
+    expect(result.unitInfo).toBeUndefined();
+  });
+
+  it("非法日期归一化不触发（20240230 不存在）", () => {
+    const result = calculateLine("20240230-20240101");
+    expect(result.unitInfo).toBeUndefined();
+  });
+
+  it("闰年合法日期触发（20240229）", () => {
+    const result = calculateLine("20240229-20240101");
+    expect(result.unitInfo).toBeDefined();
+  });
+
+  it("非日期减法不触发（普通整数减法）", () => {
+    const result = calculateLine("12345678-12345678");
+    expect(result.result).toBe(0);
+    expect(result.unitInfo).toBeUndefined();
+  });
+
+  it("复合表达式不触发日期差值", () => {
+    const result = calculateLine("20240101 - 20230101 + 5");
+    // 普通计算
+    expect(result.result).toBe(10005);
+    expect(result.unitInfo).toBeUndefined();
+  });
+
+  it("千分位/小数减法不触发日期差值", () => {
+    const result = calculateLine("20240101.5 - 20230101");
+    expect(result.unitInfo).toBeUndefined();
+  });
+
+  it("带千分位逗号的减法不触发日期差值", () => {
+    // 千分位逗号数字 expr-eval 不解析，走 numberExtraction（逗号当千分位提取求和）
+    const result = calculateLine("20,240,101 - 20,230,101");
+    expect(result.unitInfo).toBeUndefined();
+    expect(result.result).toBe(20240101 + 20230101);
+  });
+
+  it("日期差值为 0 也触发", () => {
+    const result = calculateLine("20240101-20240101");
+    expect(result.result).toBe(0);
+    expect(result.text).toBe("0");
+    expect(result.unitInfo).toBeDefined();
+    expect(result.unitInfo!.baseValue).toBe(0);
+  });
+});
+
 // ============ calculateSummary ============
 
 describe("calculateSummary", () => {
