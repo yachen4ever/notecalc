@@ -212,3 +212,80 @@ describe("V6 - 复合单位归一化 (compoundUnit)", () => {
     expect(defaultUnit.factor).toBe(60);
   });
 });
+
+describe("V6.1 - 紧凑时间格式 (compact time)", () => {
+  it("3h24m → 3.4 小时", () => {
+    const result = compoundUnitRule.match("3h24m");
+    expect(result).not.toBeNull();
+    // 3h + 24m = 10800 + 1440 = 12240 秒
+    expect(result!.result).toBe(12240);
+    expect(result!.text).toContain("小时");
+    expect(result!.text).toContain("3.4");
+    expect(result!.unitInfo!.category).toBe("time");
+  });
+
+  it("1d2h30m → 默认展示天", () => {
+    const result = compoundUnitRule.match("1d2h30m");
+    expect(result).not.toBeNull();
+    // 86400 + 7200 + 1800 = 95400 秒
+    expect(result!.result).toBe(95400);
+    expect(result!.text).toContain("天");
+    expect(result!.unitInfo!.defaultUnitIndex).toBe(0);
+  });
+
+  it("90min → 默认展示分钟", () => {
+    const result = compoundUnitRule.match("90min");
+    expect(result).not.toBeNull();
+    expect(result!.result).toBe(5400);
+    expect(result!.text).toContain("分钟");
+  });
+
+  it("45s → 默认展示秒", () => {
+    const result = compoundUnitRule.match("45s");
+    expect(result).not.toBeNull();
+    expect(result!.result).toBe(45);
+    expect(result!.text).toContain("秒");
+  });
+
+  it("3.5h → 支持小数", () => {
+    const result = compoundUnitRule.match("3.5h");
+    expect(result).not.toBeNull();
+    expect(result!.result).toBe(12600);
+    expect(result!.text).toContain("小时");
+  });
+
+  it("中文紧凑 2小时30分 → 2.5 小时", () => {
+    const result = compoundUnitRule.match("2小时30分");
+    expect(result).not.toBeNull();
+    expect(result!.result).toBe(9000);
+    expect(result!.text).toContain("2.5");
+  });
+
+  it("带加减 1d - 2h → 减法", () => {
+    const result = compoundUnitRule.match("1d - 2h");
+    expect(result).not.toBeNull();
+    // 86400 - 7200 = 79200
+    expect(result!.result).toBe(79200);
+  });
+
+  it("5km 不触发紧凑时间规则（m 是米）", () => {
+    const result = compoundUnitRule.match("5km");
+    expect(result).not.toBeNull();
+    // 应走通用复合单位路径，归一到千米
+    expect(result!.unitInfo!.category).toBe("length");
+  });
+
+  it("1km 500m 不误判（空格分隔的复合长度）", () => {
+    const result = compoundUnitRule.match("1km 500m");
+    expect(result).not.toBeNull();
+    expect(result!.unitInfo!.category).toBe("length");
+    expect(result!.result).toBeCloseTo(1500, 2);
+  });
+
+  it("3h30m + 2h → 混合运算", () => {
+    const result = compoundUnitRule.match("3h30m + 2h");
+    expect(result).not.toBeNull();
+    // (3*3600 + 30*60) + 2*3600 = 19800
+    expect(result!.result).toBe(19800);
+  });
+});
