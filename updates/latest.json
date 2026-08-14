@@ -1,23 +1,23 @@
 {
-  "version": "0.9.0",
-  "notes": "### 新功能\n\n- **检查更新**：应用启动后自动静默检查更新（3秒延迟），也可手动点击标题栏\"检查更新\"按钮\n  - 基于 Tauri v2 Updater 插件，从 Gitee 托管的 `latest.json` 检查版本\n  - 发现新版本时弹出更新弹窗，显示版本号和更新说明，支持一键下载安装并自动重启\n  - 下载进度实时展示，安装完成后自动重启应用\n  - 更新包使用 Ed25519 签名验证，确保完整性\n  - 支持 macOS（.app.tar.gz）、Windows（NSIS -setup.exe）、Linux（.AppImage）三平台自动更新\n\n### 技术细节\n\n- 新增 `tauri-plugin-updater` + `tauri-plugin-process` 插件\n- 新增 `useVersion.ts` 统一版本号管理，`useUpdater.ts` 封装检查/下载/安装/重启逻辑\n- CI 自动收集各平台签名文件并生成 `latest.json`，同步上传到 GitHub Release 和 Gitee Release\n- 生成 Ed25519 签名密钥对，公钥内置在 `tauri.conf.json`，私钥存储在 GitHub Secrets",
-  "pub_date": "2026-08-12T13:05:20Z",
+  "version": "0.10.0",
+  "notes": "### 新功能\n\n- **设置界面**：标题栏新增⚙设置按钮，打开独立设置弹窗，包含三大分区\n  - **外观**：字体选择（SF Mono / Cascadia Code / JetBrains Mono / Fira Code 等 7 种）、字号（12-20px）、主题（暗色 / 浅色 / 跟随系统）\n  - **行为**：界面语言（中文 / English）、小数位数（0-6 位可调）、千分位分隔符（开 / 关）、Tab 键行为（行间跳转 / 缩进）\n  - **数据**：保存目录（默认 / 自定义浏览选择）、导出编码（UTF-8 带 BOM / GBK，解决 Windows Excel 中文乱码）、默认导出格式（JSON / CSV / MD）\n  - 设置持久化存储（settings.json），重启后保持\n  - 主题切换从标题栏按钮移入设置（支持跟随系统主题自动切换）\n\n### 改进\n\n- **i18n 国际化**：全界面支持中英双语，通过设置切换语言实时生效\n  - 覆盖标题栏按钮、侧边栏、汇总栏、关于对话框、设置对话框所有文案\n- **数字格式化增强**：`formatNumber` 支持自定义小数位数和千分位开关，全局格式化上下文自动应用\n- **CSV 导出编码**：新增 Rust 后端 `write_file_with_encoding` 命令，支持 UTF-8 BOM 和 GBK 编码写入\n  - GBK 编码通过可选 feature `encoding` 启用（`encoding_rs` crate）\n- **字体/字号 CSS 变量化**：从硬编码 `15px` 改为 `--app-font` 和 `--app-font-size` CSS 变量，设置变更即时生效",
+  "pub_date": "2026-08-13T15:14:36Z",
   "platforms": {
     "windows-i686": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRVGU3MGtkemNhMkdiQW5EYkV6b2pQMnFTRFdlVUFodStjcUxBWXdWUEZFcXBUZ3pUVjZ0V2xkN204UHBhNW80QjFFUWtOTjI2OGdGT3dNR2tVait1WjZzRFlNTDVkekE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTM5OTA3CWZpbGU6bm90ZWNhbGNfMC45LjBfeDg2LXNldHVwLmV4ZQpKS05hSFBDWFJWdDhsVnZsdE1KR1c0SjQxRkZtWFFLL2NmSmtLYnBwcnNkYk1WcHpjVE1UL09hMWxaMFdzVkd6ditaOXJhdHo0TllxZHFFVTNmaXdDUT09Cg==",
-      "url": "https://github.com/yachen4ever/notecalc/releases/download/v0.9.0/notecalc-0.9.0-windows-x86-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRVGU3MGtkemNhMk5yNUlHdTVUQ0hIRmpheG9FUy9ZdC9wcktTNXhwSVYwWnBFc2hSQ2RjazNnajNjS3pLL1M1b0paZEt1NUtyL3hIZ1BvL1pKWTRENjJiNC9OMzFwQlEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NjM0MDEyCWZpbGU6bm90ZWNhbGNfMC4xMC4wX3g4Ni1zZXR1cC5leGUKcmJtTEdicllNaHNHd0FOWXBmQ29ua0JCc1czd3duVFJpS1NwdEtoU0l4WExpRUwrZjAwWXNtd1A2Rm5qeTN6USsrTk1SOVI5eVdZTzBMdnhxTmlRQ3c9PQo=",
+      "url": "https://github.com/yachen4ever/notecalc/releases/download/v0.10.0/notecalc-0.10.0-windows-x86-setup.exe"
     },
     "linux-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRVGU3MGtkemNhMk0wOG5sZE8rMThGNEdtRkcxTVlVd3RVN0ZuSG9kcmQwQm9JUkM3emZXc0VxZ0VJSG5lQkg1WGRkR3hneHpPODhqRUE3TXFhRmVaUjFWN1BEZDNLcVFVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTM5ODMxCWZpbGU6bm90ZWNhbGNfMC45LjBfYW1kNjQuQXBwSW1hZ2UKUHFpLy9Fd0lvek02Sis4aGdkRXYwc2RpNUs5OE5KaWdNNG9lazQyR3ZkekF5dnpmSHdRcUFubC9oeFQ2dFgrNVZUT2lLV0VkTTFtQlVzLzY3UzA1QWc9PQo=",
-      "url": "https://github.com/yachen4ever/notecalc/releases/download/v0.9.0/notecalc-0.9.0-linux-amd64.AppImage"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRVGU3MGtkemNhMkdTeW1wdVY2NncxRG83OW5zMWN0UXhxeFNNYm13VU42eEZtajBDRVZIOTZWVFIrVXcxNElZbmxnTXh4UXlXOGFURE13SEdVSUZXVm54dkthZU1aZ1FZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NjMzOTc4CWZpbGU6bm90ZWNhbGNfMC4xMC4wX2FtZDY0LkFwcEltYWdlClZCcWV6dDZPdkVkWXNhSXNqeFdjSk5KQlEvdm1GZ3lFZ1lIb0M2VGxsYTJSQm1RYzNDbUhTc1VLMzZRYVhuYURwQldVZzRrTUNiN1VlN0ExVGhvYUJnPT0K",
+      "url": "https://github.com/yachen4ever/notecalc/releases/download/v0.10.0/notecalc-0.10.0-linux-amd64.AppImage"
     },
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRVGU3MGtkemNhMkw0dSt5MEZmSWFJc3c5RjBnSUJsSkxKTjBEa3lXbXJKakxudndrOHptbWpUb3Vrc081dDJjR01tYkFJbk1ERFBzajFGK2pwN3BXeWdJZVljNHRocHdRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTM5NzExCWZpbGU6bm90ZWNhbGMuYXBwLnRhci5negpJRFJhVXdaVjRmTXBYbmNmZlo5MkViYThhV0RYZmFyZ3lMd2RVamtIMzdBNEt3cnZvSzVJM01ZTm5RYVRNbGNnQmRxUHhxcUhkdzROSUpFellFT0hEdz09Cg==",
-      "url": "https://github.com/yachen4ever/notecalc/releases/download/v0.9.0/notecalc-0.9.0-macos-arm64.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRVGU3MGtkemNhMk1QSExUQ2RkNFRVanhTT0pLWWZiY25tN090RG9QeGNkeEl5WUlkUU1RaG0yMXhNNEFNYk5qcjlVMEVUOTdjMGM1Ty9QeHZSUENRY1V4aisyVWxFcmdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NjMzODc3CWZpbGU6bm90ZWNhbGMuYXBwLnRhci5negpveGo0OU1GN1gwaXJOU2wrWndMUVVUNVFMSTh3V29Qc2ljK21UUGV4eElYMUNWempHeExwK2o5dlQ0bTQ2bCs2VUJ0ZGVuRkZ1ZVpTbTZzYTBOdHRCUT09Cg==",
+      "url": "https://github.com/yachen4ever/notecalc/releases/download/v0.10.0/notecalc-0.10.0-macos-arm64.app.tar.gz"
     },
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRVGU3MGtkemNhMkhJKzZXSG1abWw4TVJKMjI0VUpFN2NzLzZaT2xORUNFblZSbFlBQ283S3JWL3hCa0E3M20zQVJQM3FrZ1ZUeEN2NElqVWIyU3VzRTFPTzFkKy9pWVE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NTM5ODY1CWZpbGU6bm90ZWNhbGNfMC45LjBfeDY0LXNldHVwLmV4ZQp3QUNCVDJHdERjanMwQTBZYzdUeW83YXJDMzNVMFVObHBlM2g2Tzd1Y3NpcU5hU1pJbXZmMkRDVGZFQnpScFQxOFE2OWluYUxtNEpUQ0xIcGZhSTZCdz09Cg==",
-      "url": "https://github.com/yachen4ever/notecalc/releases/download/v0.9.0/notecalc-0.9.0-windows-x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRVGU3MGtkemNhMkdGYkpvVE9ESzYyR3U2REZBWTFkVERyWTJvSy9VdkpIWTBPRUdqYzBMQmw5bEdWOUxZdmVUT3FZeDRyUXB5RCtxK0NFNG9vd1JETWlRallOMmk5SUFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2NjM0MDQwCWZpbGU6bm90ZWNhbGNfMC4xMC4wX3g2NC1zZXR1cC5leGUKN2M5RkJJTlIxYzRCV0FLSkNTQVo4WUYzQjUwclI2U01TTlNLclNsc0NZMWlyaXZWZHBXdXNsWmVSS2RVck80d092bXc3MjJTSGVvRlFZcmVYaGZjQkE9PQo=",
+      "url": "https://github.com/yachen4ever/notecalc/releases/download/v0.10.0/notecalc-0.10.0-windows-x64-setup.exe"
     }
   }
 }
